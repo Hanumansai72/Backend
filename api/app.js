@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const database = require("./models/admin");
+const temporary=require("./models/vendor-register");
 
 const app = express();
 app.use(cors());
@@ -16,7 +17,7 @@ mongoose.connect(mongoURI)
     console.error("MongoDB connection error:", err);
     process.exit(1);
   });
-
+  
 // Admin login schema
 const AdminLoginSchema = new mongoose.Schema({
   login: {
@@ -68,6 +69,44 @@ app.post("/login", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+app.get("/api/vendor", async (req, res) => {
+  try {
+    const registration_vendor = await temporary.find();
+    res.json(registration_vendor);
+  } catch (err) {
+    console.error("Error fetching vendor registrations:", err);
+    res.status(500).json({ error: "Server error fetching registrations" });
+  }
+});
+
+// register vendor
+app.post("/register", (req, res) => {
+  const today = new Date();
+  const registrationDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+
+  const registrationData = {
+    fullName: req.body.fullName,
+    phoneNumber: req.body.phoneNumber,
+    email: req.body.email,
+    businessName: req.body.businessName,
+    location: req.body.location,
+    password: req.body.password,
+    businessCategory: req.body.businessCategory,
+    subCategory: req.body.subCategory,
+    registrationDate: registrationDate // Add current date
+  };
+
+  temporary.create(registrationData)
+    .then(data => {
+      res.json({ message: "Registration successful", data: data });
+    })
+    .catch(err => {
+      console.error("Error during registration:", err);
+      res.status(500).json({ error: "Server error during registration" });
+    });
+});
+
+
 
 // Add vendor route
 app.post("/add_vendor", (req, res) => {
