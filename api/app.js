@@ -81,22 +81,21 @@ app.get("/api/vendor", async (req, res) => {
 
 // register vendor
 app.post("/register", (req, res) => {
-  const today = new Date();
-  const registrationDate = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+  const vendorData = {
+    Business_Name: req.body.Business_Name,
+    Owner_name: req.body.Owner_name,
+    Email_address: req.body.Email_address,
+    Phone_number: req.body.Phone_number,
+    Business_address: req.body.Business_address,
+    Category: req.body.Category,
+    Sub_Category: req.body.Sub_Category,
+    Tax_ID: req.body.Tax_ID,
+    Password:req.body.Password
 
-  const registrationData = {
-    fullName: req.body.fullName,
-    phoneNumber: req.body.phoneNumber,
-    email: req.body.email,
-    businessName: req.body.businessName,
-    location: req.body.location,
-    password: req.body.password,
-    businessCategory: req.body.businessCategory,
-    subCategory: req.body.subCategory,
-    registrationDate: registrationDate // Add current date
+
   };
 
-  temporary.create(registrationData)
+  temporary.create(vendorData)
     .then(data => {
       res.json({ message: "Registration successful", data: data });
     })
@@ -105,7 +104,21 @@ app.post("/register", (req, res) => {
       res.status(500).json({ error: "Server error during registration" });
     });
 });
+app.post("/postusername",async(req,res)=>{
+  const {username,password}=req.body;
+  const lgin = await database.findOne({"Email_address":username,"Password":password})
+  if (lgin){
+    if(lgin.Password===password){
+      return res.json({message:"Success"});
+    }
+    else{
+      return res.json({message:"Failed"});
 
+
+    }
+  }
+
+})
 
 
 // Add vendor route
@@ -136,7 +149,6 @@ app.post("/add_vendor", (req, res) => {
     });
 });
 
-// Get all vendors route
 app.get("/vendors", async (req, res) => {
   try {
     const vendors = await VendorInfo.find().limit(5);
@@ -158,6 +170,43 @@ app.get("/vendor/count",async (req,res)=>{
     res.status(500).json({error:"server error"})
   }
 })
+app.post('/postdatabase/:id', async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const vendor = await temporary.findById(id);
+    
+    if (!vendor) {
+      return res.status(404).json({ error: "Vendor not found" });
+    }
+
+    // Add vendor to the main database
+    const newVendor = {
+      Business_Name: vendor.Business_Name,
+      Owner_name: vendor.Owner_name,
+      Email_address: vendor.Email_address,
+      Phone_number: vendor.Phone_number,
+      Business_address: vendor.Business_address,
+      Category: vendor.Category,
+      Sub_Category: vendor.Sub_Category,
+      Tax_ID: vendor.Tax_ID,
+      Password:vendor.Password
+
+    };
+
+    await database.create(newVendor);
+
+    // Delete from temporary
+    await temporary.findByIdAndDelete(id);
+
+    res.json({ message: "Vendor approved and added to main database" });
+
+  } catch (err) {
+    console.error("Error processing vendor approval:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
