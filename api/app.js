@@ -170,6 +170,16 @@ app.get("/vendor/count",async (req,res)=>{
     res.status(500).json({error:"server error"})
   }
 })
+app.get("/vendor/countofpendingrequest",async (req,res)=>{
+  try{
+    const valueofrequest=await temporary.countDocuments();
+    res.json({valueofrequest});
+  }
+  catch(err){
+    console.log("error Fecthing",err)
+    res.status(500).json({error:"server error"})
+  }
+})
 app.post('/postdatabase/:id', async (req, res) => {
   const id = req.params.id;
 
