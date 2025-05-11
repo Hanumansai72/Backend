@@ -9,8 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
-//const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
+//const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
+const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
@@ -257,6 +257,23 @@ app.post("/postdatabase/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/viewproduct/:vendorId", async (req, res) => {
+  const vendorId = req.params.vendorId;
+
+  if (!vendorId || vendorId === "null") {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    const products = await productdata.find({ Vendor: vendorId });
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products by vendor ID:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
