@@ -1,0 +1,30 @@
+const mongoose = require("mongoose");
+const Vendor=require("./vendor-register");
+
+const productSchema = new mongoose.Schema({
+  vendor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: Vendor, 
+    required: true
+  },
+  ProductName: String,
+  ProductPrice: String,
+  ProductStock: String,
+  ProductDescripition: String,
+  ProductReview: {
+    type: Number,
+    default: 0
+  },
+  ProductOrderPlaces: {
+    type: Number,
+    default: 0
+  },
+  ProductImageUrl: String,
+  ProductIsAvaiable: String,
+  ProductCategory: String,
+  ProductSubCategory: String,
+  ProductTags:String
+}, { collection: "Product_Vendor" });
+
+const ProductModel = mongoose.model("Product_Vendor", productSchema);
+module.exports = ProductModel;

@@ -2,7 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const database = require("./models/admin");
-const temporary=require("./models/vendor-register");
+const temporary = require("./models/vendor-register");
+const productdata = require("./models/vendorproudctdetails");
 
 const app = express();
 app.use(cors());
@@ -11,14 +12,15 @@ app.use(express.json());
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
 
+
 mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
   .catch(err => {
     console.error("MongoDB connection error:", err);
     process.exit(1);
   });
-  
-// Admin login schema
+
+// Admin Login Schema
 const AdminLoginSchema = new mongoose.Schema({
   login: {
     id: String,
@@ -29,7 +31,7 @@ const AdminLoginSchema = new mongoose.Schema({
 
 const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
 
-// Vendor info schema
+// Vendor Schema
 const VendorSchema = new mongoose.Schema({
   Business_Name: String,
   Owner_name: String,
@@ -47,7 +49,7 @@ const VendorSchema = new mongoose.Schema({
 
 const VendorInfo = mongoose.model("Vendors", VendorSchema);
 
-// Admin login route
+// Admin Login Route
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   console.log("Received login:", email, password);
@@ -69,6 +71,8 @@ app.post("/login", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
+
+// Get all temporary vendors
 app.get("/api/vendor", async (req, res) => {
   try {
     const registration_vendor = await temporary.find();
@@ -79,7 +83,7 @@ app.get("/api/vendor", async (req, res) => {
   }
 });
 
-// register vendor
+// Register vendor
 app.post("/register", (req, res) => {
   const vendorData = {
     Business_Name: req.body.Business_Name,
@@ -90,9 +94,7 @@ app.post("/register", (req, res) => {
     Category: req.body.Category,
     Sub_Category: req.body.Sub_Category,
     Tax_ID: req.body.Tax_ID,
-    Password:req.body.Password
-
-
+    Password: req.body.Password
   };
 
   temporary.create(vendorData)
@@ -104,24 +106,24 @@ app.post("/register", (req, res) => {
       res.status(500).json({ error: "Server error during registration" });
     });
 });
-app.post("/postusername",async(req,res)=>{
-  const {username,password}=req.body;
-  const lgin = await database.findOne({"Email_address":username,"Password":password})
-  if (lgin){
-    if(lgin.Password===password){
-      return res.json({message:"Success"});
-    }
-    else{
-      return res.json({message:"Failed"});
 
+// Vendor login
+app.post("/postusername", async (req, res) => {
+  const { username, password } = req.body;
+  const lgin = await database.findOne({ "Email_address": username, "Password": password });
 
+  if (lgin) {
+    if (lgin.Password === password) {
+      return res.json({ message: "Success", vendorId: lgin._id });
+    } else {
+      return res.json({ message: "Failed" });
     }
+  } else {
+    return res.json({ message: "User not found" });
   }
+});
 
-})
-
-
-// Add vendor route
+// Add vendor to main database
 app.post("/add_vendor", (req, res) => {
   const vendor = {
     Business_Name: req.body.businessName,
@@ -149,6 +151,7 @@ app.post("/add_vendor", (req, res) => {
     });
 });
 
+// Get limited vendors
 app.get("/vendors", async (req, res) => {
   try {
     const vendors = await VendorInfo.find().limit(5);
@@ -158,29 +161,78 @@ app.get("/vendors", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-app.get("/vendor/count",async (req,res)=>{
-  try{
-    const count=await VendorInfo.countDocuments();
+
+// Vendor counts
+app.get("/vendor/count", async (req, res) => {
+  try {
+    const count = await VendorInfo.countDocuments();
     const count1 = await VendorInfo.countDocuments({ Product_Name: { $exists: true, $ne: "" } });
 
-    res.json({ count,count1 })
+    res.json({ count, count1 });
+  } catch (err) {
+    console.log("error Fetching", err);
+    res.status(500).json({ error: "server error" });
+  }
+});
 
-  }catch(err){
-    console.log("error Fecthing",err)
-    res.status(500).json({error:"server error"})
+// Pending requests count
+app.get("/vendor/countofpendingrequest", async (req, res) => {
+  try {
+    const valueofrequest = await temporary.countDocuments();
+    res.json({ valueofrequest });
+  } catch (err) {
+    console.log("error Fetching", err);
+    res.status(500).json({ error: "server error" });
   }
-})
-app.get("/vendor/countofpendingrequest",async (req,res)=>{
-  try{
-    const valueofrequest=await temporary.countDocuments();
-    res.json({valueofrequest});
+});
+
+
+app.post("/addproduct", async (req, res) => {
+  try {
+    const {
+      vendor,
+      ProductName,
+      ProductPrice,
+      ProductStock,
+      ProductDescripition,
+      ProductTags,
+      ProductCategory,
+      ProductSubCategory,
+      ProductLocation,
+      ProductIsAvaiable,
+      ProductImageUrl
+    } = req.body;
+
+    if (!vendor) {
+      return res.status(400).json({ message: "Vendor ID is required" });
+    }
+
+    const newProduct = new productdata({
+      vendor,
+      ProductName,
+      ProductPrice,
+      ProductStock,
+      ProductDescripition,
+      ProductTags,
+      ProductCategory,
+      ProductSubCategory,
+      ProductLocation,
+      ProductIsAvaiable,
+      ProductImageUrl
+      ,
+    });
+
+    const savedProduct = await newProduct.save();
+
+    res.status(201).json({ message: "Product added successfully", product: savedProduct });
+  } catch (err) {
+    console.error("Product creation error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
-  catch(err){
-    console.log("error Fecthing",err)
-    res.status(500).json({error:"server error"})
-  }
-})
-app.post('/postdatabase/:id', async (req, res) => {
+});
+
+
+app.post("/postdatabase/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
@@ -190,7 +242,6 @@ app.post('/postdatabase/:id', async (req, res) => {
       return res.status(404).json({ error: "Vendor not found" });
     }
 
-    // Add vendor to the main database
     const newVendor = {
       Business_Name: vendor.Business_Name,
       Owner_name: vendor.Owner_name,
@@ -200,13 +251,10 @@ app.post('/postdatabase/:id', async (req, res) => {
       Category: vendor.Category,
       Sub_Category: vendor.Sub_Category,
       Tax_ID: vendor.Tax_ID,
-      Password:vendor.Password
-
+      Password: vendor.Password
     };
 
     await database.create(newVendor);
-
-    // Delete from temporary
     await temporary.findByIdAndDelete(id);
 
     res.json({ message: "Vendor approved and added to main database" });
@@ -216,7 +264,6 @@ app.post('/postdatabase/:id', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");

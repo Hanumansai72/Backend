@@ -12,7 +12,7 @@ const VendorSchema = new mongoose.Schema({
   Tax_ID: String,
   registrationDate: {
     type: Date,
-    default: Date.now  // Automatically stores current timestamp
+    default: Date.now  
   },  Password:String
 
 }, { collection: "Vendors" }); 
