@@ -19,7 +19,6 @@ mongoose.connect(mongoURI)
     process.exit(1);
   });
 
-// Admin Login Schema
 const AdminLoginSchema = new mongoose.Schema({
   login: {
     id: String,
@@ -30,7 +29,6 @@ const AdminLoginSchema = new mongoose.Schema({
 
 const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
 
-// Vendor Schema
 const VendorSchema = new mongoose.Schema({
   Business_Name: String,
   Owner_name: String,
@@ -48,7 +46,6 @@ const VendorSchema = new mongoose.Schema({
 
 const VendorInfo = mongoose.model("Vendors", VendorSchema);
 
-// Admin Login Route
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   console.log("Received login:", email, password);
@@ -71,7 +68,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Get all temporary vendors
 app.get("/api/vendor", async (req, res) => {
   try {
     const registration_vendor = await temporary.find();
@@ -82,7 +78,6 @@ app.get("/api/vendor", async (req, res) => {
   }
 });
 
-// Register vendor
 app.post("/register", (req, res) => {
   const vendorData = {
     Business_Name: req.body.Business_Name,
@@ -106,7 +101,6 @@ app.post("/register", (req, res) => {
     });
 });
 
-// Vendor login
 app.post("/postusername", async (req, res) => {
   const { username, password } = req.body;
   const lgin = await database.findOne({ "Email_address": username, "Password": password });
@@ -122,7 +116,6 @@ app.post("/postusername", async (req, res) => {
   }
 });
 
-// Add vendor to main database
 app.post("/add_vendor", (req, res) => {
   const vendor = {
     Business_Name: req.body.businessName,
@@ -150,7 +143,6 @@ app.post("/add_vendor", (req, res) => {
     });
 });
 
-// Get limited vendors
 app.get("/vendors", async (req, res) => {
   try {
     const vendors = await VendorInfo.find().limit(5);
@@ -161,7 +153,6 @@ app.get("/vendors", async (req, res) => {
   }
 });
 
-// Vendor counts
 app.get("/vendor/count", async (req, res) => {
   try {
     const count = await VendorInfo.countDocuments();
@@ -272,6 +263,18 @@ app.get("/viewproduct/:vendorId", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/api/categories/:id", async (req, res) => {
+  try {
+    const vendor = await database.findById(req.params.id).select("Category");
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+    res.json(vendor);
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+});
+
 
 
 
