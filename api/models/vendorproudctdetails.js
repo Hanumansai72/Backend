@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Vendor=require("./vendor-register");
 
 const productSchema = new mongoose.Schema({
-  vendor: {
+  Vendor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: Vendor, 
     required: true
@@ -20,7 +20,6 @@ const productSchema = new mongoose.Schema({
     default: 0
   },
   ProductImageUrl: String,
-  ProductIsAvaiable: String,
   ProductCategory: String,
   ProductSubCategory: String,
   ProductTags:String

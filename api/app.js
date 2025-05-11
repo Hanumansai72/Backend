@@ -9,9 +9,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-//const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
-
+//const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
@@ -175,7 +174,6 @@ app.get("/vendor/count", async (req, res) => {
   }
 });
 
-// Pending requests count
 app.get("/vendor/countofpendingrequest", async (req, res) => {
   try {
     const valueofrequest = await temporary.countDocuments();
@@ -190,36 +188,31 @@ app.get("/vendor/countofpendingrequest", async (req, res) => {
 app.post("/addproduct", async (req, res) => {
   try {
     const {
-      vendor,
+      Vendor,
+      
       ProductName,
       ProductPrice,
       ProductStock,
-      ProductDescripition,
+      ProductDescription,
       ProductTags,
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      ProductIsAvaiable,
-      ProductImageUrl
+      
     } = req.body;
 
-    if (!vendor) {
-      return res.status(400).json({ message: "Vendor ID is required" });
-    }
-
     const newProduct = new productdata({
-      vendor,
+      Vendor,
+    
       ProductName,
       ProductPrice,
       ProductStock,
-      ProductDescripition,
+      ProductDescription,
       ProductTags,
       ProductCategory,
       ProductSubCategory,
-      ProductLocation,
-      ProductIsAvaiable,
-      ProductImageUrl
-      ,
+      ProductLocation
+      
     });
 
     const savedProduct = await newProduct.save();
