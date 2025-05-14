@@ -1,4 +1,5 @@
 const database=require("mongoose");
+
 const data=database.Schema({
   Business_Name: String,
   Owner_name: String,
