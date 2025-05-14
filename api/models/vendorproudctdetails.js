@@ -19,10 +19,11 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  ProductImageUrl: String,
+  
   ProductCategory: String,
   ProductSubCategory: String,
-  ProductTags:String
+  ProductTags:String,
+  ProductLocation:String
 }, { collection: "Product_Vendor" });
 
 const ProductModel = mongoose.model("Product_Vendor", productSchema);

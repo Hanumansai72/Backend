@@ -185,9 +185,10 @@ app.post("/addproduct", async (req, res) => {
       ProductPrice,
       ProductStock,
       ProductDescription,
-      ProductTags,
+      
       ProductCategory,
       ProductSubCategory,
+      ProductTags,
       ProductLocation,
       
     } = req.body;
