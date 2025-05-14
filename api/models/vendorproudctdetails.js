@@ -23,7 +23,11 @@ const productSchema = new mongoose.Schema({
   ProductCategory: String,
   ProductSubCategory: String,
   ProductTags:String,
-  ProductLocation:String
+  ProductLocation:String,
+  isAvailable: {
+      type: Boolean,
+      default: true,
+    },
 }, { collection: "Product_Vendor" });
 
 const ProductModel = mongoose.model("Product_Vendor", productSchema);
