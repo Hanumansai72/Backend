@@ -4,13 +4,13 @@ const mongoose = require("mongoose");
 const database = require("./models/admin");
 const temporary = require("./models/vendor-register");
 const productdata = require("./models/vendorproudctdetails");
-
+const vieworder=require("./models/productorders")
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
-//const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
+//const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
+const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
@@ -249,6 +249,31 @@ app.post("/postdatabase/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+app.get("/wow", async (req, res) => {
+  try {
+    const count = await vieworder.countDocuments();
+    const all = await vieworder.find();
+
+    console.log({ count, all }); // ✅ log it before responding
+
+    res.json({ count, all }); // ✅ only send one response
+  } catch (err) {
+    console.error("Error counting documents:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get('/pending-orders', async (req, res) => {
+  try {
+    const pendingOrders = await vieworder.find({ orderStatus: 'Pending' });
+    res.status(200).json(pendingOrders);
+  } catch (err) {
+    console.error('Error fetching pending orders:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
 app.get("/viewproduct/:vendorId", async (req, res) => {
   const vendorId = req.params.vendorId;
 
@@ -275,9 +300,6 @@ app.get("/api/categories/:id", async (req, res) => {
     res.status(500).json({ message: "Server Error", error: err.message });
   }
 });
-
-
-
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
