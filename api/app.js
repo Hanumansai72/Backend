@@ -174,6 +174,18 @@ app.get("/vendor/countofpendingrequest", async (req, res) => {
     res.status(500).json({ error: "server error" });
   }
 });
+app.get("/:id/settings",async(req,res)=>{
+  try{
+    const vendorsid=  req.params.id;
+    const datasettings= await database.findById(vendorsid)
+    res.json({datasettings})
+  }
+  catch(err){
+    res.json("got an error",err)
+
+
+  }
+})
 
 
 app.post("/addproduct", async (req, res) => {
