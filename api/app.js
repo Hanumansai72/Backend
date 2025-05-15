@@ -179,7 +179,6 @@ app.get("/:id/settings",async(req,res)=>{
     const vendorsid=  req.params.id;
     const datasettings= await database.findById(vendorsid)
     res.json({datasettings})
-    console.log(datasettings)
   }
   catch(err){
     res.json("got an error",err)
