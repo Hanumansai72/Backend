@@ -28,6 +28,7 @@ const productSchema = new mongoose.Schema({
       type: Boolean,
       default: true,
     },
+  ProductUrl:String
 }, { collection: "Product_Vendor" });
 
 const ProductModel = mongoose.model("Product_Vendor", productSchema);

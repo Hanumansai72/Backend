@@ -8,6 +8,9 @@ const vieworder=require("./models/productorders")
 const app = express();
 app.use(cors());
 app.use(express.json());
+const multer = require("multer");
+const cloudinary = require("./models/cloudinary"); 
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
@@ -187,26 +190,34 @@ app.get("/:id/settings",async(req,res)=>{
 })
 
 
-app.post("/addproduct", async (req, res) => {
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "product_images",
+    allowed_formats: ["jpg", "jpeg", "png"],
+  },
+});
+
+const upload = multer({ storage: storage });
+
+app.post("/addproduct", upload.single("productImage"), async (req, res) => {
   try {
     const {
       Vendor,
-      
       ProductName,
       ProductPrice,
       ProductStock,
       ProductDescription,
-      
+      ProductTags,
       ProductCategory,
       ProductSubCategory,
-      ProductTags,
       ProductLocation,
-      
+      ProductUrl
     } = req.body;
+
 
     const newProduct = new productdata({
       Vendor,
-    
       ProductName,
       ProductPrice,
       ProductStock,
@@ -214,18 +225,19 @@ app.post("/addproduct", async (req, res) => {
       ProductTags,
       ProductCategory,
       ProductSubCategory,
-      ProductLocation
-      
+      ProductLocation,
+      ProductUrl,
     });
 
     const savedProduct = await newProduct.save();
+    res.status(201).json({ message: "Product uploaded successfully", product: savedProduct });
 
-    res.status(201).json({ message: "Product added successfully", product: savedProduct });
   } catch (err) {
-    console.error("Product creation error:", err);
+    console.error("Product upload error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 
 
 app.post("/postdatabase/:id", async (req, res) => {
