@@ -102,6 +102,30 @@ app.post("/register", (req, res) => {
       res.status(500).json({ error: "Server error during registration" });
     });
 });
+app.put("/update/userdetailes/:id",async (req,res)=>{
+  const userid=req.params.id;
+  const {
+    Business_Name,
+    Owner_name,
+    Email_address,
+    Phone_number,
+    Business_address,
+    Tax_ID,
+    Password
+  }=req.body
+  const upatedesahhs=await database.findByIdAndUpdate(userid,{
+    Business_Name,
+    Owner_name,
+    Email_address,
+    Phone_number,
+    Business_address,
+    Tax_ID,
+    Password
+  },{ new: true }
+  );
+
+  res.status(200).json({ message: "User updated", data: upatedesahhs });
+});
 
 app.post("/postusername", async (req, res) => {
   const { username, password } = req.body;
@@ -132,6 +156,7 @@ app.post("/add_vendor", (req, res) => {
     Product_Description: req.body.productDescription,
     Price: req.body.price,
     Stock: req.body.stock
+    Password:req.body.password
   };
 
   database.create(vendor)
