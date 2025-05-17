@@ -155,7 +155,7 @@ app.post("/add_vendor", (req, res) => {
     Product_Name: req.body.productName,
     Product_Description: req.body.productDescription,
     Price: req.body.price,
-    Stock: req.body.stock
+    Stock: req.body.stock,
     Password:req.body.password
   };
 
