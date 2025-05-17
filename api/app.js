@@ -402,6 +402,32 @@ app.delete("/delete/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.get("/fetch", async (req, res) => {
+  const { category } = req.query;
+
+  try {
+    const query = category
+      ? { ProductCategory: { $regex: new RegExp(category, "i") } }
+      : {};
+
+    const products = await productdata.find(query).lean();
+
+    if (!products.length) {
+      return res.status(404).json({ message: "No products found" });
+    }
+
+
+    
+    
+
+    res.status(200).json(products);
+  } catch (err) {
+    console.error("Error fetching products with vendors:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
