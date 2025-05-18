@@ -5,6 +5,7 @@ const database = require("./models/admin");
 const temporary = require("./models/vendor-register");
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
+const cart=require("./models/cart")
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -81,6 +82,85 @@ app.get("/api/vendor", async (req, res) => {
     res.status(500).json({ error: "Server error fetching registrations" });
   }
 });
+const Cart = require('./models/cart');  // Make sure to import at the top
+
+app.post("/cart", async (req, res) => {
+  const {
+    Vendorid,
+    productid,
+    producturl,
+    productname,
+    productQuantity,
+    productprice,
+    productvendor
+  } = req.body;
+
+  // Validate required fields
+  if (!Vendorid || !mongoose.Types.ObjectId.isValid(Vendorid)) {
+    return res.status(400).json({ message: "Invalid or missing Vendorid" });
+  }
+
+  if (!producturl || !productname || !productQuantity || !productprice) {
+    return res.status(400).json({ message: "Missing required product fields" });
+  }
+
+  try {
+    const cartItem = new cart({
+      Vendorid,
+      productid,
+      producturl,
+      productname,
+      productQuantity,
+      productprice,
+      productvendor: productvendor || "Unknown Vendor"
+    });
+
+    const savedItem = await cartItem.save();
+    res.status(201).json({ message: "Added to cart", cartItem: savedItem });
+  } catch (error) {
+    console.error("Failed to add to cart:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.get("/carts/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const usercarts = await cart.find({ Vendorid: id });  // or findOne
+    res.json(usercarts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get("/cart/:id/count",async (req,res)=>{
+  try{
+    const cartid =req.params.id;
+    const countcart=await cart.countDocuments({Vendorid:cartid});
+    res.json({count:countcart})
+  }
+  catch(err){
+        res.status(500).json({ error: err.message });
+
+  }
+})
+app.delete("/delete/:itemId", async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const deletedItem = await cart.findOneAndDelete({
+      _id: itemId,
+    });
+
+    if (!deletedItem) {
+      return res.status(404).json({ message: "Cart item not found" });
+    }
+
+    res.status(200).json({ message: "Item removed from cart" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 
 app.post("/register", (req, res) => {
   const vendorData = {
@@ -302,7 +382,8 @@ app.post("/fetch/userprofile", async (req, res) => {
     }
 
     if (user.Password === password) {
-      return res.status(200).json({ message: "Success", user });
+      return res.status(200).json({ message: "Success", user , userId: user._id 
+});
     } else {
       return res.status(401).json({ message: "Invalid password" });
     }
