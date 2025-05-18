@@ -477,6 +477,25 @@ app.get("/fetch", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+  app.get("/product/:id", async (req, res) => {
+  try {
+    const product = await productdata.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const vendor = await database.findById(product.Vendor); // manually get the vendor
+
+    res.json({
+      ...product.toObject(),
+      Vendor: vendor  // replace the ID with the full vendor object
+    });
+  } catch (err) {
+    console.error("Error fetching product or vendor:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 
 
