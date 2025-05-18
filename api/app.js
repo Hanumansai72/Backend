@@ -10,6 +10,8 @@ app.use(cors());
 app.use(express.json());
 const multer = require("multer");
 const cloudinary = require("./models/cloudinary"); 
+const UserMain=require("./models/main_userprofile")
+
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
@@ -172,7 +174,7 @@ app.post("/add_vendor", (req, res) => {
 
 app.get("/vendors", async (req, res) => {
   try {
-    const vendors = await VendorInfo.find().limit(5);
+    const vendors = await VendorInfo.find().limit(10);
     res.json(vendors);
   } catch (err) {
     console.error("Error fetching vendors:", err);
@@ -261,6 +263,55 @@ app.post("/addproduct", upload.single("productImage"), async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+app.post("/profiledata",async (req, res) => {
+  const {
+    Full_Name,
+    Emailaddress,
+    Phone_Number,
+    Password,
+    Location
+  } = req.body;
+
+  const dataprofile = {
+    Full_Name,
+    Emailaddress,
+    Phone_Number,
+    Password,
+    Location
+  };
+
+  UserMain.create(dataprofile)
+    .then(data => {
+      console.log("Response saved successfully", data);
+      res.status(201).json({ message: "Profile saved successfully", data });
+    })
+    .catch(err => {
+      console.error("Failed to save data:", err);
+      res.status(500).json({ error: "Failed to save profile data" });
+    });
+});
+
+app.post("/fetch/userprofile", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await UserMain.findOne({ Emailaddress: email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.Password === password) {
+      return res.status(200).json({ message: "Success", user });
+    } else {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+  } catch (err) {
+    console.error("Error fetching user profile:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 
 
 
