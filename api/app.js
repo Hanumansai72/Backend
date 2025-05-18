@@ -82,9 +82,8 @@ app.get("/api/vendor", async (req, res) => {
     res.status(500).json({ error: "Server error fetching registrations" });
   }
 });
-const Cart = require('./models/cart');  // Make sure to import at the top
 
-app.post("/cart", async (req, res) => {
+app.post("/api/cart", async (req, res) => {
   const {
     Vendorid,
     productid,
@@ -95,7 +94,6 @@ app.post("/cart", async (req, res) => {
     productvendor
   } = req.body;
 
-  // Validate required fields
   if (!Vendorid || !mongoose.Types.ObjectId.isValid(Vendorid)) {
     return res.status(400).json({ message: "Invalid or missing Vendorid" });
   }
