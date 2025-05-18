@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema({
   ProductName: String,
   ProductPrice: String,
   ProductStock: String,
-  Descripition: String,
+  ProductDescription: String,
   ProductReview: {
     type: Number,
     default: 0

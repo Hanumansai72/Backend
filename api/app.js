@@ -247,7 +247,7 @@ app.post("/addproduct", upload.single("productImage"), async (req, res) => {
       ProductName,
       ProductPrice,
       ProductStock,
-      Description,
+      ProductDescription,
       ProductTags,
       ProductCategory,
       ProductSubCategory,
