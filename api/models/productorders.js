@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Vendor=require("./vendor-register");
+const Vendor=require("./admin");
 
 
 const productOrderSchema = new mongoose.Schema({

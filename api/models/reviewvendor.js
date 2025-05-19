@@ -1,19 +1,18 @@
 const mongoose = require('mongoose');
+const Vendor=require("./admin")
+const Product=require("./vendorproudctdetails")
+const customer=require("./main_userprofile")
 
 const reviewSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
+    ref: Product,
     required: true
   },
-  vendorId: {
+
+vid: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vendor',
-    required: true
-  },
-  customerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Customer',
+    ref: customer,
     required: true
   },
   customerName: {

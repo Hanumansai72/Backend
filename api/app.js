@@ -7,6 +7,7 @@ const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
 const cart=require("./models/cart")
 const app = express();
+const revieworder=require("./models/reviewvendor")
 app.use(cors());
 app.use(express.json());
 const multer = require("multer");
@@ -120,6 +121,7 @@ app.post("/api/cart", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
 app.get("/carts/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -292,6 +294,17 @@ app.get("/:id/settings",async(req,res)=>{
 
   }
 })
+app.get("/myprofile/:id",async (req,res)=>{
+  try{
+    const id=req.params.id
+    const myprofileid=await UserMain.findById(id);
+    res.json(myprofileid)
+
+  }
+  catch(err){
+    res.json(err)
+  }
+})
 
 
 const storage = new CloudinaryStorage({
@@ -303,6 +316,50 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage: storage });
+app.get("/fetch/review/:rid",async(req,res)=>{
+  try{
+  const rid=req.params.rid;
+  const getreview=await revieworder.find({productId:rid})
+  res.json({getreview})
+
+  }
+  catch(err){
+    res.json({err})
+
+  }
+
+})
+app.post("/review/:vid", async (req, res) => {
+  try {
+    const vid = req.params.vid;
+
+    const {
+      productId,
+      customerName,
+      rating,
+      comment
+    } = req.body;
+
+    const revieorders = new revieworder({
+      productId,
+      vid, 
+      customerName,
+      rating,
+      comment
+    });
+
+    const savingreview = await revieorders.save();
+    res.status(201).json({
+      message: "Review uploaded successfully",
+      review: savingreview
+    });
+
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 
 app.post("/addproduct", upload.single("productImage"), async (req, res) => {
   try {
@@ -568,7 +625,7 @@ app.get("/fetch", async (req, res) => {
 
     res.json({
       ...product.toObject(),
-      Vendor: vendor  // replace the ID with the full vendor object
+      Vendor: vendor  
     });
   } catch (err) {
     console.error("Error fetching product or vendor:", err);
