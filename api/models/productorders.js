@@ -1,62 +1,79 @@
-const mongoose = require('mongoose');
-const Vendor=require("./admin");
+const mongoose = require("mongoose");
+const vendor=require("./admin")
 
-
-const productOrderSchema = new mongoose.Schema({
-  customerId: {
+const orderDetailsSchema = new mongoose.Schema({
+  vendorid:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: Vendor,
-    required: true
-  },
-  vendorId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: Vendor,
+    ref: vendor,
     required: true
   },
   productId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: Vendor,
+    ref: "Product",
     required: true
+  },
+  productName: {
+    type: String,
+    required: true
+  },
+  productImage: {
+    type: String 
   },
   quantity: {
     type: Number,
-    required: true
+    required: true,
+    min: 1
   },
   pricePerUnit: {
     type: Number,
     required: true
   },
-  totalAmount: {
+  totalPrice: {
     type: Number,
     required: true
   },
+
+  customerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Customer",
+    required: false // optional if guest checkout
+  },
+  customerName: {
+    type: String,
+    required: true
+  },
+  phone: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+
+  shippingAddress: {
+    fullAddress: { type: String, required: true },
+    city: { type: String, required: true },
+    pincode: { type: String, required: true },
+    state: { type: String, required: true }
+  },
+
   orderStatus: {
     type: String,
-    enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
-    default: 'Pending'
+    enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+    default: "Pending"
   },
+
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Paid', 'Failed'],
-    default: 'Pending'
+    enum: ["Pending", "Paid", "Failed"],
+    default: "Pending"
   },
-  shippingAddress: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: String
-  },
-  expectedDeliveryDate: {
-    type: Date
-  },
-  createdAt: {
+
+  orderedAt: {
     type: Date,
     default: Date.now
-  },
-  notes: {
-    type: String
   }
 });
 
-module.exports = mongoose.model('ProductOrder', productOrderSchema);
+module.exports = mongoose.model("OrderDetails", orderDetailsSchema);

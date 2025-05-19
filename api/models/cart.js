@@ -1,14 +1,22 @@
 const mongoose = require('mongoose');
-const userdata=require("./main_userprofile")
+const userprofile=require("./main_userprofile")
+const vendor=require("./admin")
 
 const cartItemSchema = new mongoose.Schema({
-    Vendorid:{
+  customerid: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: userdata,
+    ref: userprofile, 
     required: true,
   },
-      productid:String,
-
+  Vendorid: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: vendor, // Ensure "Vendor" matches the mongoose.model name for vendor
+    required: true,
+  },
+  productid: {
+    type: String,
+    required: true,
+  },
   producturl: {
     type: String,
     required: true,
@@ -38,5 +46,4 @@ const cartItemSchema = new mongoose.Schema({
 });
 
 const CartItem = mongoose.model('CartItem', cartItemSchema);
-
 module.exports = CartItem;
