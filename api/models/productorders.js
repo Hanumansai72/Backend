@@ -55,7 +55,11 @@ const orderDetailsSchema = new mongoose.Schema({
     fullAddress: { type: String, required: true },
     city: { type: String, required: true },
     pincode: { type: String, required: true },
-    state: { type: String, required: true }
+    state: { type: String, required: true },
+    coordinates: {
+    latitude: { type: Number },
+    longitude: { type: Number }
+  }
   },
 
   orderStatus: {
