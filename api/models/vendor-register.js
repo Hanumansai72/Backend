@@ -7,7 +7,7 @@ const data=database.Schema({
   Phone_number: String,
   Business_address: String,
   Category: String,
-  Sub_Category: String,
+  Sub_Category: [String],
   Tax_ID: String,
   registrationDate: {
     type: Date,

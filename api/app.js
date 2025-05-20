@@ -176,20 +176,21 @@ app.post("/register", (req, res) => {
     Phone_number: req.body.Phone_number,
     Business_address: req.body.Business_address,
     Category: req.body.Category,
-    Sub_Category: req.body.Sub_Category,
+    Sub_Category: Array.isArray(req.body.Sub_Category) ? req.body.Sub_Category : [req.body.Sub_Category],
     Tax_ID: req.body.Tax_ID,
+    Latitude: req.body.Latitude,
+    Longitude: req.body.Longitude,
     Password: req.body.Password
   };
 
   temporary.create(vendorData)
-    .then(data => {
-      res.json({ message: "Registration successful", data: data });
-    })
+    .then(data => res.json({ message: "Registration successful", data }))
     .catch(err => {
       console.error("Error during registration:", err);
       res.status(500).json({ error: "Server error during registration" });
     });
 });
+
 app.put("/update/userdetailes/:id",async (req,res)=>{
   const userid=req.params.id;
   const {
@@ -489,10 +490,12 @@ app.post("/postdatabase/:id", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-app.get("/wow", async (req, res) => {
+app.get("/wow/:id", async (req, res) => {
   try {
+    const id=req.params.id
     const count = await vieworder.countDocuments();
-    const all = await vieworder.find();
+  
+    const all = await vieworder.find({vendorid:id});
 
     console.log({ count, all }); 
 
@@ -503,9 +506,11 @@ app.get("/wow", async (req, res) => {
   }
 });
 
-app.get('/pending-orders', async (req, res) => {
+app.get('/pending-orders/:id', async (req, res) => {
+
   try {
-    const pendingOrders = await vieworder.find({ orderStatus: 'Pending' });
+    const id=req.params.id
+    const pendingOrders = await vieworder.find({ vendorid:id,orderStatus: 'Pending' });
     res.status(200).json(pendingOrders);
   } catch (err) {
     console.error('Error fetching pending orders:', err);
@@ -676,6 +681,18 @@ app.post('/ordercart', async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+app.get("/orderdetails/:id",async (req,res)=>{
+  try {
+    const id=req.params.id
+    const ordercustomer=await vieworder.find({customerId:id})
+    res.json(ordercustomer)
+    
+  }
+  catch(err){
+    res.json(err)
+
+  }
+})
 
 
 

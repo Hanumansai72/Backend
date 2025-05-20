@@ -36,7 +36,7 @@ const orderDetailsSchema = new mongoose.Schema({
   customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
-    required: false // optional if guest checkout
+    required: false 
   },
   customerName: {
     type: String,
