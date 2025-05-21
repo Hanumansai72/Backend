@@ -13,7 +13,12 @@ const data=database.Schema({
     type: Date,
     default: Date.now  
   },
-  Password:String
+  Password:String,
+  ID_Type:String,
+    ProductUrl:String,
+    Latitude: String,
+  Longitude: String
+
 
 },{collection:"Temp-reg"});
 const temp_register=database.model("tempo",data)

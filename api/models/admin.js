@@ -13,7 +13,12 @@ const VendorSchema = new mongoose.Schema({
   registrationDate: {
     type: Date,
     default: Date.now  
-  },  Password:String
+  },  Password:String,
+  ProductUrl:String,
+    ID_Type:String,
+    Latitude: String,
+  Longitude: String
+
 
 }, { collection: "Vendors" }); 
 

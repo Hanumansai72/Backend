@@ -8,8 +8,16 @@ const vieworder=require("./models/productorders")
 const cart=require("./models/cart")
 const app = express();
 const revieworder=require("./models/reviewvendor")
+const axios = require("axios"); 
+const https = require("https");
+const { OpenAI } = require("openai");
+
+
+
+
 app.use(cors());
 app.use(express.json());
+
 const multer = require("multer");
 const cloudinary = require("./models/cloudinary"); 
 const UserMain=require("./models/main_userprofile")
@@ -71,6 +79,58 @@ app.post("/login", async (req, res) => {
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+const client = new OpenAI({
+  baseURL: "https://router.huggingface.co/nebius/v1",
+  apiKey: "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", 
+});
+
+async function generateDescription(category, subCategory) {
+  const prompt = `Write a short product description and relevant comma-separated tags for a product in the category "${category}" and sub-category "${subCategory}". Format like this:
+
+Product Description: <text>
+ProductTags: <tag1>, <tag2>, ...`;
+
+  const chatCompletion = await client.chat.completions.create({
+    model: "Qwen/Qwen3-32B",
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+
+  return chatCompletion.choices[0].message.content;
+}
+
+
+app.post("/generate-content", async (req, res) => {
+  const { category, subCategory } = req.body;
+
+  try {
+    const resultText = await generateDescription(category, subCategory);
+
+const descriptionMatch = resultText.match(/Product Description:\s*(.*?)\s*ProductTags:/s);
+const tagsMatch = resultText.match(/ProductTags:\s*(.*)/s);
+console.log("sai:",descriptionMatch)
+const description = descriptionMatch ? descriptionMatch[1].trim() : "";
+const tags = tagsMatch ? tagsMatch[1].trim() : "";
+
+res.json({
+  content: {
+    des: description,
+    tag: tags,
+  },
+});
+
+
+  } catch (error) {
+    console.error("API error:", error.message || error.response?.data);
+    res.status(500).json({ error: "Failed to generate content" });
   }
 });
 
@@ -148,6 +208,54 @@ app.get("/cart/:id/count",async (req,res)=>{
 
   }
 })
+app.put("/update-order-status/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { orderStatus } = req.body;
+
+    const updatedOrder = await vieworder.findByIdAndUpdate(
+      id,
+      { orderStatus },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Order status updated", updatedOrder });
+  } catch (err) {
+    console.error("Error updating order status:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get('/pending-orders/:id', async (req, res) => {
+  try {
+    const { search, page = 1, limit = 10 } = req.query;
+    const query = {
+      vendorid: req.params.id,
+      orderStatus: 'Pending' 
+    };
+
+    if (search) {
+      query.$or = [
+        { customerName: { $regex: search, $options: 'i' } },
+        { productName: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const orders = await vieworder.find(query)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    const total = await vieworder.countDocuments(query);
+
+    res.status(200).json({ orders, total });
+  } catch (err) {
+    console.error('Error fetching pending orders:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+
+
 app.delete("/delete/:itemId", async (req, res) => {
   try {
     const { itemId } = req.params;
@@ -168,27 +276,26 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
-app.post("/register", (req, res) => {
-  const vendorData = {
-    Business_Name: req.body.Business_Name,
-    Owner_name: req.body.Owner_name,
-    Email_address: req.body.Email_address,
-    Phone_number: req.body.Phone_number,
-    Business_address: req.body.Business_address,
-    Category: req.body.Category,
-    Sub_Category: Array.isArray(req.body.Sub_Category) ? req.body.Sub_Category : [req.body.Sub_Category],
-    Tax_ID: req.body.Tax_ID,
-    Latitude: req.body.Latitude,
-    Longitude: req.body.Longitude,
-    Password: req.body.Password
-  };
+app.post("/register", async (req, res) => {
+ try {
+    const {
+      Business_Name, Owner_name, Email_address, Phone_number, Business_address,
+      Category, Sub_Category, Tax_ID, Password, Latitude, Longitude,
+      ProductUrl, ID_Type
+    } = req.body;
 
-  temporary.create(vendorData)
-    .then(data => res.json({ message: "Registration successful", data }))
-    .catch(err => {
-      console.error("Error during registration:", err);
-      res.status(500).json({ error: "Server error during registration" });
+    const vendor = new temporary({
+      Business_Name, Owner_name, Email_address, Phone_number, Business_address,
+      Category, Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
+      Tax_ID, Password, Latitude, Longitude, ProductUrl, ID_Type
     });
+
+    await vendor.save();
+    res.json({ message: "Registration successful" });
+  } catch (err) {
+    console.error("Error during registration:", err);
+    res.status(500).json({ error: "Server error during registration" });
+  }
 });
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
@@ -322,7 +429,8 @@ const storage = new CloudinaryStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const storages = multer.memoryStorage();
+const upload = multer({ storage: storages });
 app.get("/fetch/review/:rid",async(req,res)=>{
   try{
   const rid=req.params.rid;
@@ -368,7 +476,7 @@ app.post("/review/:vid", async (req, res) => {
 });
 
 
-app.post("/addproduct", upload.single("productImage"), async (req, res) => {
+app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
   try {
     const {
       Vendor,
@@ -380,9 +488,10 @@ app.post("/addproduct", upload.single("productImage"), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      ProductUrl
     } = req.body;
 
+    // Assuming you've already uploaded to Cloudinary and received secure URLs in req.body.ProductUrls (array)
+    const ProductUrls = req.body.ProductUrl;
 
     const newProduct = new productdata({
       Vendor,
@@ -394,7 +503,7 @@ app.post("/addproduct", upload.single("productImage"), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      ProductUrl,
+      ProductUrl: ProductUrls, // store as array
     });
 
     const savedProduct = await newProduct.save();
@@ -405,6 +514,7 @@ app.post("/addproduct", upload.single("productImage"), async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 app.post("/profiledata",async (req, res) => {
   const {
     Full_Name,
@@ -492,32 +602,23 @@ app.post("/postdatabase/:id", async (req, res) => {
 });
 app.get("/wow/:id", async (req, res) => {
   try {
-    const id=req.params.id
-    const count = await vieworder.countDocuments();
-  
-    const all = await vieworder.find({vendorid:id});
+    const id = req.params.id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    console.log({ count, all }); 
+    const total = await vieworder.countDocuments({ vendorid: id });
+    const all = await vieworder.find({ vendorid: id })
+      .sort({ orderedAt: -1 }) // optional: sort by latest first
+      .skip(skip)
+      .limit(limit);
 
-    res.json({ count, all }); 
+    res.json({ total, all });
   } catch (err) {
-    console.error("Error counting documents:", err);
+    console.error("Error fetching paginated orders:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-app.get('/pending-orders/:id', async (req, res) => {
-
-  try {
-    const id=req.params.id
-    const pendingOrders = await vieworder.find({ vendorid:id,orderStatus: 'Pending' });
-    res.status(200).json(pendingOrders);
-  } catch (err) {
-    console.error('Error fetching pending orders:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 
 app.get("/viewproduct/:vendorId", async (req, res) => {
   const vendorId = req.params.vendorId;
