@@ -708,15 +708,40 @@ app.delete("/delete/:id", async (req, res) => {
 });
 app.get("/fetch/services", async (req, res) => {
   const subCategory = req.query.category;
+  const userLat = parseFloat(req.query.lat);
+  const userLng = parseFloat(req.query.lng);
 
   if (!subCategory) {
     return res.status(400).json({ message: "Missing category parameter" });
   }
 
   try {
-    const services = await database.find({
+    const query = {
       Sub_Category: { $regex: new RegExp(`^${subCategory.trim()}$`, "i") }
-    });
+    };
+
+    let services = [];
+
+    if (!isNaN(userLat) && !isNaN(userLng)) {
+      // Use geospatial query to sort by proximity
+      services = await Vendor.aggregate([
+        {
+          $geoNear: {
+            near: {
+              type: "Point",
+              coordinates: [userLng, userLat]
+            },
+            distanceField: "distance",
+            spherical: true,
+            query: query,
+            maxDistance: 20000 // optional: 20 km
+          }
+        }
+      ]);
+    } else {
+      // Fallback if location is missing
+      services = await Vendor.find(query);
+    }
 
     let generatedDescription = '';
     let generatedTags = [];
