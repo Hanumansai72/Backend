@@ -55,6 +55,11 @@ const bookingSchema = new mongoose.Schema({
     upiId: String,
     bank: String
   },
+  status: {
+    type: String,
+    enum: ['Pending', 'Accepted', 'In Progress', 'Completed'],
+    default: 'Pending'
+  },
   totalAmount: Number,
   createdAt: {
     type: Date,

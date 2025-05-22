@@ -279,6 +279,7 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
+
 app.post("/register", async (req, res) => {
  try {
     const {
@@ -887,7 +888,40 @@ app.get("/orderdetails/:id",async (req,res)=>{
 
   }
 })
-
+app.get("/api/newjob/:id",async(req,res)=>{
+  const id=req.params.id
+  try{
+    const findingnewjob=await booking_service.find({Vendorid:id})
+    res.json(findingnewjob)
+  }
+  catch(err){
+    res.json(err)
+  }
+})
+// In your booking controller or route file
+app.put('/api/bookings/:id/status', async (req, res) => {
+  const { status } = req.body;
+  try {
+    const updatedBooking = await booking_service.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    res.json(updatedBooking);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update booking status' });
+  }
+});
+app.get("/services/jobs/:id",async(req,res)=>{
+  const id=req.params.id;
+  try{
+    const findingserviceid= await booking_service.findById(id)
+    res.json(findingserviceid)
+  }
+  catch(err){
+    res.json(err)
+  }
+})
 
 
 
