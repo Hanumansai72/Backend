@@ -891,7 +891,8 @@ app.get("/orderdetails/:id",async (req,res)=>{
 app.get("/api/newjob/:id",async(req,res)=>{
   const id=req.params.id
   try{
-    const findingnewjob=await booking_service.find({Vendorid:id})
+    const findingnewjob=await booking_service.find({Vendorid:id,      status: { $ne: "Completed" } // Exclude bookings with status "Completed"
+})
     res.json(findingnewjob)
   }
   catch(err){
@@ -912,6 +913,32 @@ app.put('/api/bookings/:id/status', async (req, res) => {
     res.status(500).json({ error: 'Failed to update booking status' });
   }
 });
+app.get("/jobhistry/:id",async(req,res)=>{
+    const id=req.params.id;
+    try{
+      const databse1=await booking_service.find({Vendorid:id,status:"Completed"})
+      res.json(databse1)
+    }
+    catch(err){
+      res.json(err)
+    }
+
+
+})
+app.get("/count/service/:id",async(req,res)=>{
+  const id=req.params.id;
+  try{
+    const count1=await booking_service.countDocuments({Vendorid:id,status:"Pending"})
+        const count2=await booking_service.countDocuments({Vendorid:id,status:"Completed"})
+        
+
+
+    res.json({count1:count1,count2:count2})
+  }
+  catch(err){
+    console.log(err)
+  }
+})
 app.get("/services/jobs/:id",async(req,res)=>{
   const id=req.params.id;
   try{
