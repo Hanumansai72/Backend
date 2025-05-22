@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
-const cart=require("./models/cart")
+const CartItem=require("./models/cart")
 const app = express();
 const revieworder=require("./models/reviewvendor")
 const axios = require("axios"); 
@@ -171,7 +171,7 @@ app.post("/api/cart", async (req, res) => {
   }
 
   try {
-    const cartItem = new cart({
+    const cartItem = new CartItem({
       customerid,
       Vendorid,
       productid,
@@ -193,7 +193,7 @@ app.post("/api/cart", async (req, res) => {
 app.get("/carts/:id", async (req, res) => {
   try {
     const id = req.params.id;
-    const usercarts = await cart.find({ customerid: id });  
+    const usercarts = await CartItem.find({ customerid: id });  
     res.json(usercarts);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -202,7 +202,7 @@ app.get("/carts/:id", async (req, res) => {
 app.get("/cart/:id/count",async (req,res)=>{
   try{
     const cartid =req.params.id;
-    const countcart=await cart.countDocuments({Vendorid:cartid});
+    const countcart=await CartItem.countDocuments({Vendorid:cartid});
     res.json({count:countcart})
   }
   catch(err){
@@ -262,7 +262,7 @@ app.get('/pending-orders/:id', async (req, res) => {
 app.delete("/delete/:itemId", async (req, res) => {
   try {
     const { itemId } = req.params;
-    const deletedItem = await cart.findOneAndDelete({
+    const deletedItem = await CartItem.findOneAndDelete({
       _id: itemId,
     });
 
