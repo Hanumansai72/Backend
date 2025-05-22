@@ -949,7 +949,16 @@ app.get("/services/jobs/:id",async(req,res)=>{
     res.json(err)
   }
 })
-
+app.get("/cart/service/:id",async(req,res)=>{
+  const id=req.params.id
+  try{
+    const cartservice=await booking_service.find({customerid:id})
+    res.json(cartservice)
+  }
+  catch(err){
+    console.log(err)
+  }
+})
 
 
 app.listen(8031, () => {
