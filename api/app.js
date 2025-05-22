@@ -600,10 +600,8 @@ app.post("/postdatabase/:id", async (req, res) => {
       registrationDate: vendor.registrationDate,
     };
 
-    // Add to main vendor collection
     await Vendor.create(newVendorData);
 
-    // Delete from temporary vendor collection
     await TempVendor.findByIdAndDelete(id);
 
     res.json({ message: "Vendor approved and added to main database" });
