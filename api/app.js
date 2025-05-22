@@ -138,7 +138,7 @@ res.json({
 
 app.get("/api/vendor", async (req, res) => {
   try {
-    const registration_vendor = await temporary.find();
+    const registration_vendor = await TempVendor.find();
     res.json(registration_vendor);
   } catch (err) {
     console.error("Error fetching vendor registrations:", err);
@@ -287,7 +287,7 @@ app.post("/register", async (req, res) => {
       ProductUrl, ID_Type
     } = req.body;
 
-    const vendor = new temporary({
+    const vendor = new TempVendor({
       Business_Name, Owner_name, Email_address, Phone_number, Business_address,
       Category, Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
       Tax_ID, Password, Latitude, Longitude, ProductUrl, ID_Type
@@ -393,7 +393,7 @@ app.get("/vendor/count", async (req, res) => {
 
 app.get("/vendor/countofpendingrequest", async (req, res) => {
   try {
-    const valueofrequest = await temporary.countDocuments();
+    const valueofrequest = await TempVendor.countDocuments();
     res.json({ valueofrequest });
   } catch (err) {
     console.log("error Fetching", err);
