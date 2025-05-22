@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const database = require("./models/admin");
-const temporary = require("./models/vendor-register");
+
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
 const cart=require("./models/cart")
@@ -11,6 +10,9 @@ const revieworder=require("./models/reviewvendor")
 const axios = require("axios"); 
 const https = require("https");
 const { OpenAI } = require("openai");
+const booking_service=require("./models/servicebooking")
+const TempVendor = require("./models/vendor-register");
+const Vendor = require("./models/admin");
 
 
 
@@ -310,7 +312,7 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
     Tax_ID,
     Password
   }=req.body
-  const upatedesahhs=await database.findByIdAndUpdate(userid,{
+  const upatedesahhs=await Vendor.findByIdAndUpdate(userid,{
     Business_Name,
     Owner_name,
     Email_address,
@@ -326,7 +328,7 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
 
 app.post("/postusername", async (req, res) => {
   const { username, password } = req.body;
-  const lgin = await database.findOne({ "Email_address": username, "Password": password });
+  const lgin = await Vendor.findOne({ "Email_address": username, "Password": password });
 
   if (lgin) {
     if (lgin.Password === password) {
@@ -356,7 +358,7 @@ app.post("/add_vendor", (req, res) => {
     Password:req.body.password
   };
 
-  database.create(vendor)
+  Vendor.create(vendor)
     .then(data => {
       console.log("Vendor added:", data);
       res.json(data);
@@ -401,7 +403,7 @@ app.get("/vendor/countofpendingrequest", async (req, res) => {
 app.get("/:id/settings",async(req,res)=>{
   try{
     const vendorsid=  req.params.id;
-    const datasettings= await database.findById(vendorsid)
+    const datasettings= await Vendor.findById(vendorsid)
     res.json({datasettings})
   }
   catch(err){
@@ -573,13 +575,15 @@ app.post("/postdatabase/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
-    const vendor = await temporary.findById(id);
-    
+    // Find vendor in temp collection
+    const vendor = await TempVendor.findById(id);
+
     if (!vendor) {
-      return res.status(404).json({ error: "Vendor not found" });
+      return res.status(404).json({ error: "Vendor not found in temporary collection" });
     }
 
-    const newVendor = {
+    // Prepare new vendor data for main collection
+    const newVendorData = {
       Business_Name: vendor.Business_Name,
       Owner_name: vendor.Owner_name,
       Email_address: vendor.Email_address,
@@ -589,22 +593,27 @@ app.post("/postdatabase/:id", async (req, res) => {
       Sub_Category: vendor.Sub_Category,
       Tax_ID: vendor.Tax_ID,
       Password: vendor.Password,
+      ID_Type: vendor.ID_Type,
+      ProductUrl: vendor.ProductUrl,
       Latitude: vendor.Latitude,
       Longitude: vendor.Longitude,
-      ProductUrl: vendor.ProductUrl,
-      ID_Type: vendor.ID_Type
+      registrationDate: vendor.registrationDate,
     };
 
-    await database.create(newVendor);
-    await temporary.findByIdAndDelete(id);
+    // Add to main vendor collection
+    await Vendor.create(newVendorData);
+
+    // Delete from temporary vendor collection
+    await TempVendor.findByIdAndDelete(id);
 
     res.json({ message: "Vendor approved and added to main database" });
 
-  } catch (err) {
-    console.error("Error processing vendor approval:", err);
+  } catch (error) {
+    console.error("Error processing vendor approval:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
+
 app.get("/wow/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -642,7 +651,7 @@ app.get("/viewproduct/:vendorId", async (req, res) => {
 });
 app.get("/api/categories/:id", async (req, res) => {
   try {
-    const vendor = await database.findById(req.params.id).select("Category");
+    const vendor = await Vendor.findById(req.params.id).select("Category");
     if (!vendor) {
       return res.status(404).json({ message: "Vendor not found" });
     }
@@ -706,48 +715,52 @@ app.delete("/delete/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-app.get("/fetch/services", async (req, res) => {
-  const subCategory = req.query.category;
-  const userLat = parseFloat(req.query.lat);
-  const userLng = parseFloat(req.query.lng);
 
-  if (!subCategory) {
+
+app.get('/fetch/services', async (req, res) => {
+  const { category, lat, lng } = req.query;
+
+  if (!category) {
     return res.status(400).json({ message: "Missing category parameter" });
   }
 
   try {
-    const query = {
-      Sub_Category: { $regex: new RegExp(`^${subCategory.trim()}$`, "i") }
-    };
-
     let services = [];
 
-    if (!isNaN(userLat) && !isNaN(userLng)) {
-      // Use geospatial query to sort by proximity
-      services = await Vendor.aggregate([
-        {
-          $geoNear: {
-            near: {
+    if (lat && lng) {
+      const userLat = parseFloat(lat);
+      const userLng = parseFloat(lng);
+
+      services = await Vendor.find({
+        Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") },
+        location: {
+          $near: {
+            $geometry: {
               type: "Point",
               coordinates: [userLng, userLat]
             },
-            distanceField: "distance",
-            spherical: true,
-            query: query,
-            maxDistance: 20000 // optional: 20 km
+            $maxDistance: 5000 // 5 km
           }
         }
-      ]);
+      });
+
+      if (services.length === 0) {
+        services = await Vendor.find({
+          Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") }
+        }).limit(10); // show top 10 results
+      }
     } else {
-      // Fallback if location is missing
-      services = await Vendor.find(query);
+      services = await Vendor.find({
+        Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") }
+      });
     }
 
+    // AI-generated content
     let generatedDescription = '';
     let generatedTags = [];
 
     try {
-      const aiResult = await generateDescription(subCategory);
+      const aiResult = await generateDescription(category);
 
       const descMatch = aiResult.match(/Product Description:\s*(.+)/i);
       const tagsMatch = aiResult.match(/ProductTags:\s*(.+)/i);
@@ -759,16 +772,30 @@ app.get("/fetch/services", async (req, res) => {
     }
 
     res.json({
-      description: generatedDescription,
-      tags: generatedTags,
       services,
+      description: generatedDescription,
+      tags: generatedTags
     });
+
   } catch (err) {
-    console.error(err);
+    console.error("Server error:", err);
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
+
+app.post("/api/booking",async(req,res)=>{
+  try{
+    const booking=new booking_service(req.body)
+    await booking.save();
+res.status(200).json({ message: 'Booking saved successfully', booking });
+  } catch (err) {
+    console.error('Booking Save Error:', err);
+    res.status(500).json({ error: 'Failed to save booking' });
+  }
+});
+
+ 
 app.get("/fetch", async (req, res) => {
   const { category } = req.query;
 
@@ -811,7 +838,7 @@ app.get("/fetch", async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    const vendor = await database.findById(product.Vendor); // manually get the vendor
+    const vendor = await Vendor.findById(product.Vendor); // manually get the vendor
 
     res.json({
       ...product.toObject(),
