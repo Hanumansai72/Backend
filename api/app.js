@@ -208,6 +208,7 @@ app.get("/cart/:id/count",async (req,res)=>{
 
   }
 })
+app.get("/")
 app.put("/update-order-status/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -587,7 +588,11 @@ app.post("/postdatabase/:id", async (req, res) => {
       Category: vendor.Category,
       Sub_Category: vendor.Sub_Category,
       Tax_ID: vendor.Tax_ID,
-      Password: vendor.Password
+      Password: vendor.Password,
+      Latitude: vendor.Latitude,
+      Longitude: vendor.Longitude,
+      ProductUrl: vendor.ProductUrl,
+      ID_Type: vendor.ID_Type
     };
 
     await database.create(newVendor);
@@ -701,6 +706,44 @@ app.delete("/delete/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.get("/fetch/services", async (req, res) => {
+  const subCategory = req.query.category;
+
+  if (!subCategory) {
+    return res.status(400).json({ message: "Missing category parameter" });
+  }
+
+  try {
+    const services = await database.find({
+      Sub_Category: { $regex: new RegExp(`^${subCategory.trim()}$`, "i") }
+    });
+
+    let generatedDescription = '';
+    let generatedTags = [];
+
+    try {
+      const aiResult = await generateDescription(subCategory);
+
+      const descMatch = aiResult.match(/Product Description:\s*(.+)/i);
+      const tagsMatch = aiResult.match(/ProductTags:\s*(.+)/i);
+
+      generatedDescription = descMatch ? descMatch[1].trim() : '';
+      generatedTags = tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()) : [];
+    } catch (err) {
+      console.error("AI Generation failed:", err);
+    }
+
+    res.json({
+      description: generatedDescription,
+      tags: generatedTags,
+      services,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
 app.get("/fetch", async (req, res) => {
   const { category } = req.query;
 
