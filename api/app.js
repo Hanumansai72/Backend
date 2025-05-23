@@ -372,7 +372,7 @@ app.post("/add_vendor", (req, res) => {
 
 app.get("/vendors", async (req, res) => {
   try {
-    const vendors = await VendorInfo.find().limit(10);
+    const vendors = await Vendor.find().limit(10);
     res.json(vendors);
   } catch (err) {
     console.error("Error fetching vendors:", err);
