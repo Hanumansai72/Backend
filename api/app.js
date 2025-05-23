@@ -343,32 +343,39 @@ app.post("/postusername", async (req, res) => {
 });
 
 app.post("/add_vendor", (req, res) => {
-  const vendor = {
-    Business_Name: req.body.businessName,
-    Owner_name: req.body.ownerName,
-    Email_address: req.body.email,
-    Phone_number: req.body.phone,
-    Business_address: req.body.address,
-    Category: req.body.category,
-    Sub_Category: req.body.subCategory,
-    Tax_ID: req.body.taxId,
-    Product_Name: req.body.productName,
-    Product_Description: req.body.productDescription,
-    Price: req.body.price,
-    Stock: req.body.stock,
-    Password:req.body.password
+  const vendors = {
+    Business_Name: req.body.Business_Name,
+    Owner_name: req.body.Owner_name,
+    Email_address: req.body.Email_address,
+    Phone_number: req.body.Phone_number,
+    Business_address: req.body.Business_address,
+    Category: req.body.Category,
+    Sub_Category: req.body.Sub_Category,
+    Tax_ID: req.body.Tax_ID,
+    Password: req.body.Password,
+    Latitude: req.body.Latitude,
+    Longitude: req.body.Longitude,
+    ProductUrl: req.body.ProductUrl,
   };
 
-  Vendor.create(vendor)
+  // Save to MongoDB using your Vendor model
+  Vendor.create(vendors)
     .then(data => {
       console.log("Vendor added:", data);
-      res.json(data);
+      res.status(200).json({ message: "Vendor added successfully", data });
     })
     .catch(err => {
       console.error("Error adding vendor:", err);
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: "Failed to add vendor", details: err.message });
     });
 });
+
+  
+
+
+
+  
+  
 
 app.get("/vendors", async (req, res) => {
   try {
