@@ -15,27 +15,16 @@ const TempVendor = require("./models/vendor-register");
 const Vendor = require("./models/admin");
 const nodemailer = require('nodemailer');
 
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://apna-mestri-vendor.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-
-
-
-const allowedOrigins = [
-  "http://localhost:3001",
-  "https://apna-mestri-vendor.vercel.app"
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
 
 app.use(express.json());
 
