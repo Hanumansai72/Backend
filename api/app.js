@@ -13,6 +13,8 @@ const { OpenAI } = require("openai");
 const booking_service=require("./models/servicebooking")
 const TempVendor = require("./models/vendor-register");
 const Vendor = require("./models/admin");
+const nodemailer = require('nodemailer');
+
 
 
 
@@ -61,6 +63,33 @@ const VendorSchema = new mongoose.Schema({
 }, { collection: "Vendors" });
 
 const VendorInfo = mongoose.model("Vendors", VendorSchema);
+
+function nodemailers(email,subject){
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'hanumansai40@gmail.com',        
+      pass: 'dzpihdrkfhtgqpkr', 
+    },
+  });
+  
+  const mailOptions = {
+    from: 'hanumansai40@gmail.com',         
+    to: email ,         
+    subject: 'OTP Verification ',        
+    text: `Your OTP is ${subject}`,
+    html: `<p>Your OTP is <b>${subject}</b></p>`, 
+  };
+  
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Email sent successfully:', info.response);
+    }
+  });
+  
+}
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -279,28 +308,47 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
-
 app.post("/register", async (req, res) => {
- try {
+  try {
     const {
       Business_Name, Owner_name, Email_address, Phone_number, Business_address,
       Category, Sub_Category, Tax_ID, Password, Latitude, Longitude,
       ProductUrl, ID_Type
     } = req.body;
 
+    if (OTP.has(Email_address)) {
+      return res.status(400).json({ message: "OTP not verified" });
+    }
+
+    const existingVendor = await Vendor.findOne({ Email_address });
+    if (existingVendor) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
     const vendor = new TempVendor({
-      Business_Name, Owner_name, Email_address, Phone_number, Business_address,
-      Category, Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
-      Tax_ID, Password, Latitude, Longitude, ProductUrl, ID_Type
+      Business_Name,
+      Owner_name,
+      Email_address,
+      Phone_number,
+      Business_address,
+      Category,
+      Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
+      Tax_ID,
+      Password,
+      Latitude,
+      Longitude,
+      ProductUrl,
+      ID_Type
     });
 
     await vendor.save();
     res.json({ message: "Registration successful" });
+
   } catch (err) {
     console.error("Error during registration:", err);
     res.status(500).json({ error: "Server error during registration" });
-  }
-});
+  }});
+
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
   const userid=req.params.id;
@@ -642,7 +690,7 @@ app.get("/wow/:id", async (req, res) => {
 
     const total = await vieworder.countDocuments({ vendorid: id });
     const all = await vieworder.find({ vendorid: id })
-      .sort({ orderedAt: -1 }) // optional: sort by latest first
+      .sort({ orderedAt: -1 }) 
       .skip(skip)
       .limit(limit);
 
@@ -979,6 +1027,39 @@ app.get("/cart/service/:id",async(req,res)=>{
     console.log(err)
   }
 })
+const OTP=new Map();
+app.post("/sendotp",async(req,res)=>{
+   const {email}=req.body;
+   const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  OTP.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+  nodemailers(email,otp);
+  res.json({ message: "OTP sent" });
+
+  
+})
+app.post("/verifyotp", (req, res) => {
+  const { email, otp } = req.body;
+
+  const storedOTP = OTP.get(email);
+
+  if (!storedOTP) {
+    return res.status(400).json({ message: "OTP not found or expired." });
+  }
+
+  if (Date.now() > storedOTP.expiresAt) {
+    OTP.delete(email); 
+    return res.status(400).json({ message: "OTP has expired." });
+  }
+
+  if (otp !== storedOTP.otp) {
+    return res.status(400).json({ message: "Invalid OTP." });
+  }
+
+  OTP.delete(email); 
+  return res.json({ message: "OTP verified successfully!" });
+});
+
 
 
 app.listen(8031, () => {
