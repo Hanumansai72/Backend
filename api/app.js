@@ -19,7 +19,11 @@ const nodemailer = require('nodemailer');
 
 
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://apna-mestri-vendor.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+}));
 app.use(express.json());
 
 const multer = require("multer");
