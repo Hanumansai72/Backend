@@ -19,11 +19,24 @@ const nodemailer = require('nodemailer');
 
 
 
+const allowedOrigins = [
+  "http://localhost:3001",
+  "https://apna-mestri-vendor.vercel.app"
+];
+
 app.use(cors({
-  origin: 'https://apna-mestri-vendor.vercel.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
 }));
+
 app.use(express.json());
 
 const multer = require("multer");
