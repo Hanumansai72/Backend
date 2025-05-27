@@ -389,8 +389,8 @@ app.get("/vendors", async (req, res) => {
 
 app.get("/vendor/count", async (req, res) => {
   try {
-    const count = await VendorInfo.countDocuments();
-    const count1 = await VendorInfo.countDocuments({ Product_Name: { $exists: true, $ne: "" } });
+    const count = await Vendor.countDocuments();
+    const count1 = await productdata.countDocuments();
 
     res.json({ count, count1 });
   } catch (err) {
