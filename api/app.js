@@ -399,6 +399,19 @@ app.get("/vendor/count", async (req, res) => {
   }
 });
 
+app.get("/dashboard/recent",async(req,res)=>{
+  try{
+  const date=new Date()
+  date.setDate(date.getDate()-7);
+  const result=await vieworder.find({orderedAt:{$gte:date}})
+  res.json(result)
+  }
+  catch(err){
+    console.log(err)
+  }
+
+})
+
 app.get("/vendor/countofpendingrequest", async (req, res) => {
   try {
     const valueofrequest = await TempVendor.countDocuments();
