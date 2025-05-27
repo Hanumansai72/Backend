@@ -1061,6 +1061,35 @@ app.post("/verifyotp", (req, res) => {
 });
 
 
+app.get("/upcomingjobs/:id", async (req, res) => {
+  try {
+    const vendorId = req.params.id;
+
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const threeDaysLater = new Date();
+threeDaysLater.setDate(today.getDate() + 3);
+const endOfDay = new Date(threeDaysLater.setHours(23, 59, 59, 999));
+
+    const upcomingJobs = await booking_service.find({
+      Vendorid: vendorId,
+      serviceDate: {
+        $gte: startOfDay,
+        $lte: endOfDay
+      }
+    })
+    .populate('Vendorid')
+    .populate('customerid')
+    .sort({ serviceTime: 1 }); // optional: sort jobs by time
+
+    res.status(200).json(upcomingJobs);
+  } catch (err) {
+    console.error("Error fetching today's jobs:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
