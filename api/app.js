@@ -18,19 +18,12 @@ const otpsender=require("./models/otpschema")
 
 const cors = require('cors');
 
-const allowedOrigins = ['http://localhost:3000', 'https://www.apnamestri.com'];
+const allowedOrigin = "https://www.apnamestri.com";
 
 app.use(cors({
-  origin: function(origin, callback){
-    // allow requests with no origin (like mobile apps or curl)
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true // if you use cookies/auth
+  origin: allowedOrigin,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 
@@ -106,24 +99,8 @@ function nodemailers(email,subject){
   
 }
 app.post("/sendotp", async (req, res) => {
-  // Manually set CORS headers for this route
-  const allowedOrigin = "https://www.apnamestri.com";
-  const origin = req.headers.origin;
-
-  if (origin === allowedOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-  }
-
-  // Also handle preflight OPTIONS request on this route
-  if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    return res.sendStatus(200);
-  }
-
   try {
     const { Email } = req.body;
-
     if (!Email) {
       return res.status(400).json({ message: "Email is required" });
     }
@@ -134,7 +111,7 @@ app.post("/sendotp", async (req, res) => {
     const newOtp = new otpsender({ Email, Otp: otpCode });
     await newOtp.save();
 
-    res.status(200).json({ message: "OTP sent successfully" }); 
+    res.status(200).json({ message: "OTP sent successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
