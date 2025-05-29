@@ -106,24 +106,38 @@ function nodemailers(email,subject){
   
 }
 app.post("/sendotp", async (req, res) => {
-    try {
-        const { Email } = req.body;
+  // Manually set CORS headers for this route
+  const allowedOrigin = "https://www.apnamestri.com";
+  const origin = req.headers.origin;
 
-        if (!Email) {
-            return res.status(400).json({ message: "Email is required" });
-        }
+  if (origin === allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  }
 
-        const otpCode = Math.floor(100000 + Math.random() * 900000);
-        nodemailers(Email,otpCode)
+  // Also handle preflight OPTIONS request on this route
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    return res.sendStatus(200);
+  }
 
-        const newOtp = new otpsender({ Email, Otp: otpCode });
-        await newOtp.save();
+  try {
+    const { Email } = req.body;
 
-
-        res.status(200).json({ message: "OTP sent successfully", otp: otpCode }); // Remove otp in prod
-    } catch (error) {
-        res.status(500).json({ message: "Server error", error: error.message });
+    if (!Email) {
+      return res.status(400).json({ message: "Email is required" });
     }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000);
+    nodemailers(Email, otpCode);
+
+    const newOtp = new otpsender({ Email, Otp: otpCode });
+    await newOtp.save();
+
+    res.status(200).json({ message: "OTP sent successfully" }); 
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
 });
 
 app.post("/verifyotp", async (req, res) => {
