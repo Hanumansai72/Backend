@@ -109,7 +109,7 @@ app.post("/sendotp", async (req, res) => {
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000);
-    nodemailers(Email, otpCode);
+    await nodemailers(Email, otpCode);
 
     const newOtp = new otpsender({ Email, Otp: otpCode });
     await newOtp.save();
