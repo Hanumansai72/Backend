@@ -14,9 +14,13 @@ const booking_service=require("./models/servicebooking")
 const TempVendor = require("./models/vendor-register");
 const Vendor = require("./models/admin");
 const nodemailer = require('nodemailer');
+const otpsender=require("./models/otpschema")
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://apna-mestri-vendor.vercel.app');
+  res.setHeader('Access-Control-Allow-Origin', 'https://apnamestri.com');
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') {
@@ -96,6 +100,43 @@ function nodemailers(email,subject){
   });
   
 }
+app.post("/sendotp", async (req, res) => {
+    try {
+        const { Email } = req.body;
+
+        if (!Email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const otpCode = Math.floor(100000 + Math.random() * 900000);
+        nodemailers(Email,otpCode)
+
+        const newOtp = new otpsender({ Email, Otp: otpCode });
+        await newOtp.save();
+
+
+        res.status(200).json({ message: "OTP sent successfully", otp: otpCode }); // Remove otp in prod
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+app.post("/verifyotp", async (req, res) => {
+  const { Email, otp } = req.body;
+
+  try {
+    const verifyOtp = await otpsender.findOne({ Email: Email, Otp: otp });
+
+    if (verifyOtp) {
+      res.status(200).json({ message: "OTP verified" });
+    } else {
+      res.status(400).json({ message: "Invalid OTP" });
+    }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -1033,38 +1074,6 @@ app.get("/cart/service/:id",async(req,res)=>{
     console.log(err)
   }
 })
-const OTP=new Map();
-app.post("/sendotp",async(req,res)=>{
-   const {email}=req.body;
-   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-  OTP.set(email, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
-  nodemailers(email,otp);
-  res.json({ message: "OTP sent" });
-
-  
-})
-app.post("/verifyotp", (req, res) => {
-  const { email, otp } = req.body;
-
-  const storedOTP = OTP.get(email);
-
-  if (!storedOTP) {
-    return res.status(400).json({ message: "OTP not found or expired." });
-  }
-
-  if (Date.now() > storedOTP.expiresAt) {
-    OTP.delete(email); 
-    return res.status(400).json({ message: "OTP has expired." });
-  }
-
-  if (otp !== storedOTP.otp) {
-    return res.status(400).json({ message: "Invalid OTP." });
-  }
-
-  OTP.delete(email); 
-  return res.json({ message: "OTP verified successfully!" });
-});
 
 
 app.get("/upcomingjobs/:id", async (req, res) => {
@@ -1094,6 +1103,8 @@ const endOfDay = new Date(threeDaysLater.setHours(23, 59, 59, 999));
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
 
 
 
