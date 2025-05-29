@@ -16,18 +16,23 @@ const Vendor = require("./models/admin");
 const nodemailer = require('nodemailer');
 const otpsender=require("./models/otpschema")
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://apnamestri.com');
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+const cors = require('cors');
 
+const allowedOrigins = ['http://localhost:3000', 'https://www.apnamestri.com'];
 
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+app.use(cors({
+  origin: function(origin, callback){
+    // allow requests with no origin (like mobile apps or curl)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true // if you use cookies/auth
+}));
+
 
 
 app.use(express.json());
