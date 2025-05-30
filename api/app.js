@@ -352,9 +352,7 @@ app.post("/register", async (req, res) => {
       ProductUrl, ID_Type
     } = req.body;
 
-    if (OTP.has(Email_address)) {
-      return res.status(400).json({ message: "OTP not verified" });
-    }
+    
 
     const existingVendor = await Vendor.findOne({ Email_address });
     if (existingVendor) {
