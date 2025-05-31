@@ -88,8 +88,7 @@ app.post("/sendotp", async (req, res) => {
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000);
-    const subject = "OTP CODE"; // ✅ fixed subject here
-
+    const subject = "OTP CODE"; 
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; color: #333;">
         <h2>OTP Verification - Apna Mestri</h2>
@@ -422,18 +421,27 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
   res.status(200).json({ message: "User updated", data: upatedesahhs });
 });
 
+
 app.post("/postusername", async (req, res) => {
   const { username, password } = req.body;
-  const lgin = await Vendor.findOne({ "Email_address": username, "Password": password });
 
-  if (lgin) {
-    if (lgin.Password === password) {
-      return res.json({ message: "Success", vendorId: lgin._id });
-    } else {
-      return res.json({ message: "Failed" });
+  try {
+    const vendor = await Vendor.findOne({ Email_address: username });
+
+    if (!vendor) {
+      return res.json({ message: "User not found" });
     }
-  } else {
-    return res.json({ message: "User not found" });
+
+    const isMatch = await bcrypt.compare(password, vendor.Password);
+
+    if (isMatch) {
+      return res.json({ message: "Success", vendorId: vendor._id });
+    } else {
+      return res.json({ message: "Incorrect password" });
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ message: "Server error during login" });
   }
 });
 
@@ -720,7 +728,6 @@ app.post("/postdatabase/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
-    // Find vendor in temp collection
     const vendor = await TempVendor.findById(id);
 
     if (!vendor) {
