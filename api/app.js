@@ -52,7 +52,7 @@ mongoose.connect(mongoURI)
   });
 
 
-function nodemailers(email,subject){
+function nodemailers(email,subject,htmlcontent){
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -65,8 +65,8 @@ function nodemailers(email,subject){
     from: 'hanumansai40@gmail.com',         
     to: email ,         
     subject: 'OTP Verification ',        
-    text: `Your OTP is ${subject}`,
-    html: `<p>Your OTP is <b>${subject}</b></p>`, 
+    text: subject,
+    html: htmlcontent, 
   };
   
   transporter.sendMail(mailOptions, (error, info) => {
@@ -86,7 +86,19 @@ app.post("/sendotp", async (req, res) => {
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000);
-    nodemailers(Email, otpCode);
+    const subject=`OTP CODE:${subject}`;
+    const htmlContent = `
+    <div style="font-family: Arial, sans-serif; color: #333;">
+      <h2>OTP Verification - Apna Mestri</h2>
+      <p>Hello,</p>
+      <p>Thank you for registering with <strong>Apna Mestri</strong>.</p>
+      <p>Your One-Time Password (OTP) is:</p>
+      <h1 style="background: #f2f2f2; display: inline-block; padding: 10px 20px; color: #000; border-radius: 5px;">${otpCode}</h1>
+      <p>This OTP is valid for 10 minutes. Please do not share it with anyone.</p>
+      <p>Best regards,<br><strong>Apna Mestri Team</strong></p>
+    </div>
+  `;
+    nodemailers(Email, subject,htmlContent);
 
     const newOtp = new otpsender({ Email, Otp: otpCode });
     await newOtp.save();
@@ -348,7 +360,6 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Hash the password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
