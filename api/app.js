@@ -19,6 +19,8 @@ const ratelimter=require("express-rate-limit")
 const hemlet=require("helmet")
 
 const cors = require('cors');
+app.set('trust proxy', 1);
+
 const limiter=ratelimter(
   {
     windowMs:15*60*1000,
