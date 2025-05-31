@@ -88,19 +88,21 @@ app.post("/sendotp", async (req, res) => {
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000);
-    const subject=`OTP CODE:${subject}`;
+    const subject = "OTP CODE"; // ✅ fixed subject here
+
     const htmlContent = `
-    <div style="font-family: Arial, sans-serif; color: #333;">
-      <h2>OTP Verification - Apna Mestri</h2>
-      <p>Hello,</p>
-      <p>Thank you for registering with <strong>Apna Mestri</strong>.</p>
-      <p>Your One-Time Password (OTP) is:</p>
-      <h1 style="background: #f2f2f2; display: inline-block; padding: 10px 20px; color: #000; border-radius: 5px;">${otpCode}</h1>
-      <p>This OTP is valid for 10 minutes. Please do not share it with anyone.</p>
-      <p>Best regards,<br><strong>Apna Mestri Team</strong></p>
-    </div>
-  `;
-    nodemailers(Email, subject,htmlContent);
+      <div style="font-family: Arial, sans-serif; color: #333;">
+        <h2>OTP Verification - Apna Mestri</h2>
+        <p>Hello,</p>
+        <p>Thank you for registering with <strong>Apna Mestri</strong>.</p>
+        <p>Your One-Time Password (OTP) is:</p>
+        <h1 style="background: #f2f2f2; display: inline-block; padding: 10px 20px; color: #000; border-radius: 5px;">${otpCode}</h1>
+        <p>This OTP is valid for 10 minutes. Please do not share it with anyone.</p>
+        <p>Best regards,<br><strong>Apna Mestri Team</strong></p>
+      </div>
+    `;
+
+    nodemailers(Email, subject, htmlContent);
 
     const newOtp = new otpsender({ Email, Otp: otpCode });
     await newOtp.save();
@@ -110,6 +112,7 @@ app.post("/sendotp", async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
+
 
 app.post("/verifyotp", async (req, res) => {
   const { Email, otp } = req.body;
