@@ -13,11 +13,23 @@ const booking_service=require("./models/servicebooking")
 const TempVendor = require("./models/vendor-register");
 const Vendor = require("./models/admin");
 const nodemailer = require('nodemailer');
+const bcrypt=require("bcrypt")
 const otpsender=require("./models/otpschema")
+const ratelimter=require("express-rate-limit")
+const hemlet=require("helmet")
 
 const cors = require('cors');
+const limiter=ratelimter(
+  {
+    windowMs:15*60*1000,
+    max:100,
+    message:"Too many request Please try again"
+  }
+)
+app.use(limiter);
 
 app.use(cors()); // allow all origins (for development)
+app.use(hemlet());
 
 
 
@@ -39,32 +51,6 @@ mongoose.connect(mongoURI)
     process.exit(1);
   });
 
-const AdminLoginSchema = new mongoose.Schema({
-  login: {
-    id: String,
-    email: String,
-    password: String
-  }
-}, { collection: "Admin-Login" });
-
-const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
-
-const VendorSchema = new mongoose.Schema({
-  Business_Name: String,
-  Owner_name: String,
-  Email_address: String,
-  Phone_number: Number,
-  Business_address: String,
-  Category: String,
-  Sub_Category: String,
-  Tax_ID: String,
-  Product_Name: String,
-  Product_Description: String,
-  Price: Number,
-  Stock: Number
-}, { collection: "Vendors" });
-
-const VendorInfo = mongoose.model("Vendors", VendorSchema);
 
 function nodemailers(email,subject){
   const transporter = nodemailer.createTransport({
@@ -100,7 +86,7 @@ app.post("/sendotp", async (req, res) => {
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000);
-    await nodemailers(Email, otpCode);
+    nodemailers(Email, otpCode);
 
     const newOtp = new otpsender({ Email, Otp: otpCode });
     await newOtp.save();
@@ -128,6 +114,7 @@ app.post("/verifyotp", async (req, res) => {
   }
 });
 
+
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   console.log("Received login:", email, password);
@@ -135,15 +122,18 @@ app.post("/login", async (req, res) => {
   try {
     const user = await AdminLogin.findOne({ "login.email": email });
 
-    if (user) {
-      if (user.login.password === password) {
-        return res.json({ message: "Success" });
-      } else {
-        return res.json({ message: "Invalid password" });
-      }
-    } else {
+    if (!user) {
       return res.json({ message: "User not found" });
     }
+
+    const isMatch = await bcrypt.compare(password, user.login.password);
+
+    if (isMatch) {
+      return res.json({ message: "Success" });
+    } else {
+      return res.json({ message: "Invalid password" });
+    }
+
   } catch (err) {
     console.error("Login error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -344,6 +334,7 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
+
 app.post("/register", async (req, res) => {
   try {
     const {
@@ -352,12 +343,14 @@ app.post("/register", async (req, res) => {
       ProductUrl, ID_Type
     } = req.body;
 
-    
-
     const existingVendor = await Vendor.findOne({ Email_address });
     if (existingVendor) {
       return res.status(400).json({ message: "Email already exists" });
     }
+
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
     const vendor = new TempVendor({
       Business_Name,
@@ -368,7 +361,7 @@ app.post("/register", async (req, res) => {
       Category,
       Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
       Tax_ID,
-      Password,
+      Password: hashedPassword, // Store hashed password
       Latitude,
       Longitude,
       ProductUrl,
@@ -381,7 +374,8 @@ app.post("/register", async (req, res) => {
   } catch (err) {
     console.error("Error during registration:", err);
     res.status(500).json({ error: "Server error during registration" });
-  }});
+  }
+});
 
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
@@ -395,6 +389,9 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
     Tax_ID,
     Password
   }=req.body
+  const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
+
   const upatedesahhs=await Vendor.findByIdAndUpdate(userid,{
     Business_Name,
     Owner_name,
@@ -402,7 +399,7 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
     Phone_number,
     Business_address,
     Tax_ID,
-    Password
+    Password:hashedPassword
   },{ new: true }
   );
 
@@ -424,50 +421,76 @@ app.post("/postusername", async (req, res) => {
   }
 });
 
-app.post("/add_vendor", (req, res) => {
-  const vendors = {
-    Business_Name: req.body.Business_Name,
-    Owner_name: req.body.Owner_name,
-    Email_address: req.body.Email_address,
-    Phone_number: req.body.Phone_number,
-    Business_address: req.body.Business_address,
-    Category: req.body.Category,
-    Sub_Category: req.body.Sub_Category,
-    Tax_ID: req.body.Tax_ID,
-    Password: req.body.Password,
-    Latitude: req.body.Latitude,
-    Longitude: req.body.Longitude,
-    ProductUrl: req.body.ProductUrl,
-  };
+const bcrypt = require("bcrypt"); // Add this at the top
 
-  // Save to MongoDB using your Vendor model
-  Vendor.create(vendors)
-    .then(data => {
-      console.log("Vendor added:", data);
-      res.status(200).json({ message: "Vendor added successfully", data });
-    })
-    .catch(err => {
-      console.error("Error adding vendor:", err);
-      res.status(500).json({ error: "Failed to add vendor", details: err.message });
-    });
-});
-
-  
-
-
-
-  
-  
-
-app.get("/vendors", async (req, res) => {
+app.post("/add_vendor", async (req, res) => {
   try {
-    const vendors = await Vendor.find().limit(10);
-    res.json(vendors);
+    const {
+      Business_Name,
+      Owner_name,
+      Email_address,
+      Phone_number,
+      Business_address,
+      Category,
+      Sub_Category,
+      Tax_ID,
+      Password,
+      Latitude,
+      Longitude,
+      ProductUrl,
+    } = req.body;
+
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
+
+    const vendors = {
+      Business_Name,
+      Owner_name,
+      Email_address,
+      Phone_number,
+      Business_address,
+      Category,
+      Sub_Category,
+      Tax_ID,
+      Password: hashedPassword, // Save hashed password
+      Latitude,
+      Longitude,
+      ProductUrl,
+    };
+
+    const data = await Vendor.create(vendors);
+    console.log("Vendor added:", data);
+    res.status(200).json({ message: "Vendor added successfully", data });
   } catch (err) {
-    console.error("Error fetching vendors:", err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Error adding vendor:", err);
+    res.status(500).json({ error: "Failed to add vendor", details: err.message });
   }
 });
+
+app.post("/postusername", async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const lgin = await Vendor.findOne({ Email_address: username });
+
+    if (!lgin) {
+      return res.json({ message: "User not found" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, lgin.Password);
+
+    if (passwordMatch) {
+      return res.json({ message: "Success", vendorId: lgin._id });
+    } else {
+      return res.json({ message: "Invalid password" });
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 app.get("/vendor/count", async (req, res) => {
   try {
@@ -621,7 +644,7 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
   }
 });
 
-app.post("/profiledata",async (req, res) => {
+app.post("/profiledata", async (req, res) => {
   const {
     Full_Name,
     Emailaddress,
@@ -630,23 +653,25 @@ app.post("/profiledata",async (req, res) => {
     Location
   } = req.body;
 
-  const dataprofile = {
-    Full_Name,
-    Emailaddress,
-    Phone_Number,
-    Password,
-    Location
-  };
+  try {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
-  UserMain.create(dataprofile)
-    .then(data => {
-      console.log("Response saved successfully", data);
-      res.status(201).json({ message: "Profile saved successfully", data });
-    })
-    .catch(err => {
-      console.error("Failed to save data:", err);
-      res.status(500).json({ error: "Failed to save profile data" });
-    });
+    const dataprofile = {
+      Full_Name,
+      Emailaddress,
+      Phone_Number,
+      Password: hashedPassword, // store hashed password
+      Location
+    };
+
+    const data = await UserMain.create(dataprofile);
+    console.log("Response saved successfully", data);
+    res.status(201).json({ message: "Profile saved successfully", data });
+  } catch (err) {
+    console.error("Failed to save data:", err);
+    res.status(500).json({ error: "Failed to save profile data" });
+  }
 });
 
 app.post("/fetch/userprofile", async (req, res) => {
@@ -659,9 +684,14 @@ app.post("/fetch/userprofile", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.Password === password) {
-      return res.status(200).json({ message: "Success", user , userId: user._id 
-});
+    const isPasswordMatch = await bcrypt.compare(password, user.Password);
+
+    if (isPasswordMatch) {
+      return res.status(200).json({
+        message: "Success",
+        user,
+        userId: user._id
+      });
     } else {
       return res.status(401).json({ message: "Invalid password" });
     }
@@ -670,9 +700,6 @@ app.post("/fetch/userprofile", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
-
-
-
 
 app.post("/postdatabase/:id", async (req, res) => {
   const id = req.params.id;
