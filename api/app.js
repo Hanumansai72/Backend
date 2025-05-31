@@ -432,7 +432,6 @@ app.post("/postusername", async (req, res) => {
   }
 });
 
-const bcrypt = require("bcrypt"); // Add this at the top
 
 app.post("/add_vendor", async (req, res) => {
   try {
