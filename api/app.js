@@ -17,6 +17,8 @@ const bcrypt=require("bcrypt")
 const otpsender=require("./models/otpschema")
 const ratelimter=require("express-rate-limit")
 const hemlet=require("helmet")
+require('dotenv').config();
+
 
 const cors = require('cors');
 app.set('trust proxy', 1);
@@ -30,7 +32,7 @@ const limiter=ratelimter(
 )
 app.use(limiter);
 
-app.use(cors()); // allow all origins (for development)
+app.use(cors()); 
 app.use(hemlet());
 
 
@@ -43,7 +45,7 @@ const cloudinary = require("./models/cloudinary");
 const UserMain=require("./models/main_userprofile")
 
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
+const mongoURI=process.env.mongoURI_perment;
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
@@ -53,24 +55,33 @@ mongoose.connect(mongoURI)
     process.exit(1);
   });
 
+const AdminLoginSchema = new mongoose.Schema({
+  login: {
+    id: String,
+    email: String,
+    password: String
+  }
+}, { collection: "Admin-Login" });
 
-function nodemailers(email,subject,htmlcontent){
+const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
+function nodemailers(email, subject, htmlcontent) {
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtpout.secureserver.net', // Correct GoDaddy SMTP host
+    port: 465,                         // SSL port for secure connection
+    secure: true,                      // true for port 465
     auth: {
-      user: 'hanumansai40@gmail.com',        
-      pass: 'dzpihdrkfhtgqpkr', 
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS, // Replace with secure env variable in production
     },
   });
-  
+
   const mailOptions = {
-    from: 'hanumansai40@gmail.com',         
-    to: email ,         
-    subject: 'OTP Verification ',        
-    text: subject,
-    html: htmlcontent, 
+    from: 'help@apnamestri.com',
+    to: email,
+    subject: subject,
+    html: htmlcontent,
   };
-  
+
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.error('Error sending email:', error);
@@ -78,7 +89,6 @@ function nodemailers(email,subject,htmlcontent){
       console.log('Email sent successfully:', info.response);
     }
   });
-  
 }
 app.post("/sendotp", async (req, res) => {
   try {
@@ -159,7 +169,7 @@ app.post("/login", async (req, res) => {
 
 const client = new OpenAI({
   baseURL: "https://router.huggingface.co/nebius/v1",
-  apiKey: "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", 
+  apiKey: process.env.API_KEY_HUGGEFACE, 
 });
 
 async function generateDescription(category, subCategory) {
@@ -655,7 +665,7 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      ProductUrl: ProductUrls, // store as array
+      ProductUrl: ProductUrls, 
     });
 
     const savedProduct = await newProduct.save();

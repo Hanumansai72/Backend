@@ -1,25 +1,30 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'hanumansai40@gmail.com',        
-    pass: 'dzpihdrkfhtgqpkr', 
-  },
-});
+function nodemailers(email, subject, htmlcontent) {
+  const transporter = nodemailer.createTransport({
+    host: 'smtpout.secureserver.net', // Correct GoDaddy SMTP host
+    port: 465,                         // SSL port for secure connection
+    secure: true,                      // true for port 465
+    auth: {
+      user: 'help@apnamestri.com',
+      pass: 'Hanumansai41#', // Replace with secure env variable in production
+    },
+  });
 
-const mailOptions = {
-  from: 'hanumansai40@gmail.com',         
-  to: 'hanumansai41@gmail.com',           
-  subject: 'Hello from Node.js!',        
-  text: 'This is a plain text email!',   
-  html: '<h2>This is an HTML email</h2><p>Sent using <b>Node.js</b> and <i>nodemailer</i>.</p>', // HTML body
-};
+  const mailOptions = {
+    from: 'help@apnamestri.com',
+    to: email,
+    subject: subject,
+    html: htmlcontent,
+  };
 
-transporter.sendMail(mailOptions, (error, info) => {
-  if (error) {
-    console.error('Error sending email:', error);
-  } else {
-    console.log('Email sent successfully:', info.response);
-  }
-});
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error('Error sending email:', error);
+    } else {
+      console.log('Email sent successfully:', info.response);
+    }
+  });
+}
+
+nodemailers("hanumansai41@gmail.com", "It’s working", "<h1>Hi</h1>");
