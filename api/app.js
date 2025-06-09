@@ -453,6 +453,17 @@ app.post("/postusername", async (req, res) => {
     return res.status(500).json({ message: "Server error during login" });
   }
 });
+app.post("/checktempvendor", async (req, res) => {
+  const { Email_address } = req.body;
+  try {
+    const found = await TempVendor.findOne({ Email_address });
+    return res.json({ found: !!found });
+  } catch (err) {
+    console.error("TempVendor check error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 app.post("/add_vendor", async (req, res) => {
