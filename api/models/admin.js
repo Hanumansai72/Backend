@@ -15,7 +15,8 @@ const vendorSchema = new mongoose.Schema({
   },
   Password: String,
   ID_Type: String,
-  ProductUrl: String,
+  ProductUrl: { type: [String], default: [] },  // array of image URLs
+
   Latitude: String,
   Longitude: String,
 

@@ -363,19 +363,32 @@ app.delete("/delete/:itemId", async (req, res) => {
 app.post("/register", async (req, res) => {
   try {
     const {
-      Business_Name, Owner_name, Email_address, Phone_number, Business_address,
-      Category, Sub_Category, Tax_ID, Password, Latitude, Longitude,
-      ProductUrl, ID_Type
+      Business_Name,
+      Owner_name,
+      Email_address,
+      Phone_number,
+      Business_address,
+      Category,
+      Sub_Category,
+      Tax_ID,
+      Password,
+      Latitude,
+      Longitude,
+      ProductUrls,  // expect plural from frontend
+      ID_Type
     } = req.body;
 
-    const existingVendor = await Vendor.findOne({ Email_address });
+    // Check if vendor email already exists
+    const existingVendor = await TempVendor.findOne({ Email_address });
     if (existingVendor) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
+    // Hash the password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
+    // Create new vendor document
     const vendor = new TempVendor({
       Business_Name,
       Owner_name,
@@ -385,22 +398,21 @@ app.post("/register", async (req, res) => {
       Category,
       Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
       Tax_ID,
-      Password: hashedPassword, // Store hashed password
+      Password: hashedPassword,
       Latitude,
       Longitude,
-      ProductUrl,
+      ProductUrl: ProductUrls || [],  // Save array of image URLs here
       ID_Type
     });
 
     await vendor.save();
-    res.json({ message: "Registration successful" });
 
+    res.json({ message: "Registration successful" });
   } catch (err) {
     console.error("Error during registration:", err);
     res.status(500).json({ error: "Server error during registration" });
   }
 });
-
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
   const userid=req.params.id;
@@ -748,13 +760,14 @@ app.post("/postdatabase/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
+    // Find vendor in temporary collection
     const vendor = await TempVendor.findById(id);
 
     if (!vendor) {
       return res.status(404).json({ error: "Vendor not found in temporary collection" });
     }
 
-    // Prepare new vendor data for main collection
+    // Prepare data for final Vendor collection
     const newVendorData = {
       Business_Name: vendor.Business_Name,
       Owner_name: vendor.Owner_name,
@@ -762,25 +775,27 @@ app.post("/postdatabase/:id", async (req, res) => {
       Phone_number: vendor.Phone_number,
       Business_address: vendor.Business_address,
       Category: vendor.Category,
-      Sub_Category: vendor.Sub_Category,
+      Sub_Category: Array.isArray(vendor.Sub_Category) ? vendor.Sub_Category : [vendor.Sub_Category],
       Tax_ID: vendor.Tax_ID,
       Password: vendor.Password,
       ID_Type: vendor.ID_Type,
-      ProductUrl: vendor.ProductUrl,
+      ProductUrl: Array.isArray(vendor.ProductUrl) ? vendor.ProductUrl : [],  // ensure it's an array
       Latitude: vendor.Latitude,
       Longitude: vendor.Longitude,
-      registrationDate: vendor.registrationDate,
+      registrationDate: vendor.registrationDate || new Date(),
     };
 
+    // Insert into final collection
     await Vendor.create(newVendorData);
 
+    // Delete from temp collection
     await TempVendor.findByIdAndDelete(id);
 
     res.json({ message: "Vendor approved and added to main database" });
 
   } catch (error) {
-    console.error("Error processing vendor approval:", error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Error approving vendor:", error);
+    res.status(500).json({ error: "Internal server error during approval" });
   }
 });
 
