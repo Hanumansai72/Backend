@@ -9,13 +9,16 @@ const vendorSchema = new mongoose.Schema({
   Category: String,
   Sub_Category: [String],
   Tax_ID: String,
-  registrationDate: {
-    type: Date,
-    default: Date.now,
-  },
-  Password: String,
   ID_Type: String,
-  ProductUrl: { type: [String], default: [] },  // array of image URLs
+  Password: String,
+
+  ProductUrls: { type: [String], default: [] }, // Multiple product/business images
+  Profile_Image: { type: String, default: "" }, // Single profile image
+
+  Account_Number: String,
+  IFSC_Code: String,
+  Charge_Per_Hour_or_Day: String,
+  Charge_Type: String, // <-- Added here
 
   Latitude: String,
   Longitude: String,
@@ -31,7 +34,12 @@ const vendorSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
-}, { collection: "Vendor-main" }); // Main vendors stored here (different collection)
+
+  registrationDate: {
+    type: Date,
+    default: Date.now,
+  },
+}, { collection: "Vendor-main" });
 
 // Pre-save hook to populate location
 vendorSchema.pre("save", function (next) {
