@@ -67,8 +67,8 @@ const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
 function nodemailers(email, subject, htmlcontent) {
   const transporter = nodemailer.createTransport({
     host: 'smtpout.secureserver.net', // Correct GoDaddy SMTP host
-    port: 465,                         // SSL port for secure connection
-    secure: true,                      // true for port 465
+  port: 587,                         // SSL port for secure connection
+    secure: false,                     // true for port 465
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS, // Replace with secure env variable in production
