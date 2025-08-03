@@ -374,11 +374,16 @@ app.post("/register", async (req, res) => {
       Password,
       Latitude,
       Longitude,
-      ProductUrls,  // expect plural from frontend
-      ID_Type
+      ProductUrls,  // multiple images
+      ProfilePic,   // single image
+      ID_Type,
+      Account_Number,
+      IFSC_Code,
+      Charge_Type,
+      Charge_Amount
     } = req.body;
 
-    // Check if vendor email already exists
+    // Check for existing vendor email
     const existingVendor = await TempVendor.findOne({ Email_address });
     if (existingVendor) {
       return res.status(400).json({ message: "Email already exists" });
@@ -388,7 +393,7 @@ app.post("/register", async (req, res) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
-    // Create new vendor document
+    // Create new vendor doc
     const vendor = new TempVendor({
       Business_Name,
       Owner_name,
@@ -401,8 +406,13 @@ app.post("/register", async (req, res) => {
       Password: hashedPassword,
       Latitude,
       Longitude,
-      ProductUrl: ProductUrls || [],  // Save array of image URLs here
-      ID_Type
+      ProductUrl: ProductUrls || [],
+      ProfilePic: ProfilePic || "",
+      ID_Type,
+      Account_Number,
+      IFSC_Code,
+      Charge_Type,
+      Charge_Amount
     });
 
     await vendor.save();
@@ -444,18 +454,13 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
 
 
 app.post("/postusername", async (req, res) => {
-  const { username, password, otpLogin } = req.body;
+  const { username, password } = req.body;
 
   try {
     const vendor = await Vendor.findOne({ Email_address: username });
 
     if (!vendor) {
       return res.json({ message: "User not found" });
-    }
-
-    if (otpLogin) {
-      // OTP was already verified on the frontend
-      return res.json({ message: "Success", vendorId: vendor._id });
     }
 
     const isMatch = await bcrypt.compare(password, vendor.Password);
@@ -470,7 +475,6 @@ app.post("/postusername", async (req, res) => {
     return res.status(500).json({ message: "Server error during login" });
   }
 });
-
 app.post("/checktempvendor", async (req, res) => {
   const { Email_address } = req.body;
   try {
