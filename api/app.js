@@ -444,13 +444,18 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
 
 
 app.post("/postusername", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, otpLogin } = req.body;
 
   try {
     const vendor = await Vendor.findOne({ Email_address: username });
 
     if (!vendor) {
       return res.json({ message: "User not found" });
+    }
+
+    if (otpLogin) {
+      // OTP was already verified on the frontend
+      return res.json({ message: "Success", vendorId: vendor._id });
     }
 
     const isMatch = await bcrypt.compare(password, vendor.Password);
@@ -465,6 +470,7 @@ app.post("/postusername", async (req, res) => {
     return res.status(500).json({ message: "Server error during login" });
   }
 });
+
 app.post("/checktempvendor", async (req, res) => {
   const { Email_address } = req.body;
   try {
