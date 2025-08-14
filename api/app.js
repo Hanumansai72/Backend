@@ -69,7 +69,7 @@ const AdminLoginSchema = new mongoose.Schema({
   }
 }, { collection: "Admin-Login" });
 
-const AdminLogin = mongoose.model("AdminLogin", AdminLoginSchema);
+const AdminLogin = mongoose.models.AdminLogin || mongoose.model("AdminLogin", AdminLoginSchema);
 
 
 
