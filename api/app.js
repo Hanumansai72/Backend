@@ -30,7 +30,6 @@ cloudinary.config({
   api_secret: "XT91-J2eY6-G7TFFlwAiwglYPiQ",
 });
 
-module.exports = cloudinary;
 
 
 const limiter=ratelimter(
@@ -473,7 +472,6 @@ app.post('/register', upload.fields([
   }
 });
 
-export default router;
 
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
