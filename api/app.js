@@ -418,72 +418,76 @@ const upload = multer({ storage });
 
 
 // Use upload.fields() for multiple images + single profile
-app.post('/register', upload.fields([
-  { name: 'productImages', maxCount: 10 },
-  { name: 'profileImage', maxCount: 1 }
-]), async (req, res) => {
-  try {
-    const {
-      Business_Name,
-      Owner_name,
-      Email_address,
-      Phone_number,
-      Business_address,
-      Category,
-      Sub_Category,
-      Tax_ID,
-      Password,
-      Latitude,
-      Longitude,
-      ID_Type,
-      Account_Number,
-      IFSC_Code,
-      Charge_Type,
-      Charge_Per_Hour_or_Day
-    } = req.body;
+app.post(
+  "/register",
+  upload.fields([
+    { name: "productImages", maxCount: 10 },
+    { name: "profileImage", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const {
+        Business_Name,
+        Owner_name,
+        Email_address,
+        Phone_number,
+        Business_address,
+        Category,
+        Sub_Category,
+        Tax_ID,
+        Password,
+        Latitude,
+        Longitude,
+        ID_Type,
+        Account_Number,
+        IFSC_Code,
+        Charge_Type,
+        Charge_Per_Hour_or_Day,
+      } = req.body;
 
-    // Check existing vendor
-    const existingVendor = await TempVendor.findOne({ Email_address });
-    if (existingVendor) return res.status(400).json({ message: "Email already exists" });
+      // Check existing vendor
+      const existingVendor = await TempVendor.findOne({ Email_address });
+      if (existingVendor)
+        return res.status(400).json({ message: "Email already exists" });
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(Password, 10);
+      // Hash password
+      const hashedPassword = await bcrypt.hash(Password, 10);
 
-    // Get uploaded file URLs
-    const ProductUrl = req.files['productImages']?.map(file => file.path) || [];
-    const ProfilePic = req.files['profileImage']?.[0]?.path || '';
+      // Get uploaded file URLs
+      const ProductUrls =
+        req.files["productImages"]?.map((file) => file.path) || [];
+      const Profile_Image = req.files["profileImage"]?.[0]?.path || "";
 
-    // Save vendor
-    const vendor = new TempVendor({
-      Business_Name,
-      Owner_name,
-      Email_address,
-      Phone_number,
-      Business_address,
-      Category,
-      Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
-      Tax_ID,
-      Password: hashedPassword,
-      Latitude,
-      Longitude,
-      ProductUrl,
-      ProfilePic,
-      ID_Type,
-      Account_Number,
-      IFSC_Code,
-      Charge_Type,
-      Charge_Amount: Charge_Per_Hour_or_Day
-    });
+      // Save vendor
+      const vendor = new TempVendor({
+        Business_Name,
+        Owner_name,
+        Email_address,
+        Phone_number,
+        Business_address,
+        Category,
+        Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
+        Tax_ID,
+        Password: hashedPassword,
+        Latitude,
+        Longitude,
+        ProductUrls,
+        Profile_Image,
+        ID_Type,
+        Account_Number,
+        IFSC_Code,
+        Charge_Type,
+        Charge_Per_Hour_or_Day,
+      });
 
-    await vendor.save();
-    res.json({ message: "Registration successful" });
-
-  } catch (err) {
-    console.error("Error during registration:", err);
-    res.status(500).json({ error: "Server error during registration" });
+      await vendor.save();
+      res.json({ message: "Registration successful" });
+    } catch (err) {
+      console.error("Error during registration:", err);
+      res.status(500).json({ error: "Server error during registration" });
+    }
   }
-});
-
+);
 
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
