@@ -861,7 +861,9 @@ app.post("/postdatabase/:id", async (req, res) => {
       Category: vendor.Category,
       Sub_Category: Array.isArray(vendor.Sub_Category)
         ? vendor.Sub_Category
-        : [vendor.Sub_Category].filter(Boolean),
+        : vendor.Sub_Category
+        ? [vendor.Sub_Category]
+        : [],
       Tax_ID: vendor.Tax_ID,
       Password: vendor.Password,
       ID_Type: vendor.ID_Type,
@@ -880,19 +882,20 @@ app.post("/postdatabase/:id", async (req, res) => {
       Charge_Type: vendor.Charge_Type || "",
     };
 
-    // 3️⃣ Insert into final Vendor collection
-    await Vendor.create(newVendorData);
+    // 3️⃣ Save to final collection
+    const finalVendor = new Vendor(newVendorData);
+    await finalVendor.save();
 
     // 4️⃣ Remove from temporary collection
     await TempVendor.findByIdAndDelete(id);
 
-    res.json({ message: "Vendor approved and added to main database" });
-
-  } catch (error) {
-    console.error("Error approving vendor:", error);
-    res.status(500).json({ error: "Internal server error during approval" });
+    res.json({ message: "Vendor approved and moved successfully", vendor: finalVendor });
+  } catch (err) {
+    console.error("Error posting vendor:", err);
+    res.status(500).json({ error: "Server error while posting vendor" });
   }
 });
+
 
 app.get("/wow/:id", async (req, res) => {
   try {
