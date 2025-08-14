@@ -895,7 +895,18 @@ app.post("/postdatabase/:id", async (req, res) => {
     res.status(500).json({ error: "Server error while posting vendor" });
   }
 });
-
+app.post("/api/viewstore", async(req,res)=>{
+  try{
+    const {id} = req.body;
+    const product_id=await productdata.find({Vendor:id})
+    res.json(product_id)
+  
+  }
+  catch(err){
+    res.json(err)
+    console.log(err)
+  }
+})
 
 app.get("/wow/:id", async (req, res) => {
   try {
