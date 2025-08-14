@@ -397,6 +397,20 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
+const uploadToCloudinary = (fileBuffer, folder = "vendors") => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: "image" },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result.secure_url);
+      }
+    );
+    stream.end(fileBuffer);
+  });
+};
+
+// Vendor/Product registration route
 app.post("/register", upload.fields([
   { name: "productImages", maxCount: 10 },
   { name: "profileImage", maxCount: 1 }
@@ -429,23 +443,15 @@ app.post("/register", upload.fields([
     let productUrls = [];
     if (req.files["productImages"]) {
       for (const file of req.files["productImages"]) {
-        const result = await cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
-          if (error) throw error;
-          return result;
-        }).end(file.buffer);
-        productUrls.push(result.secure_url);
+        const url = await uploadToCloudinary(file.buffer, "products");
+        productUrls.push(url);
       }
     }
 
     // Upload profile image to Cloudinary
     let profileUrl = "";
     if (req.files["profileImage"] && req.files["profileImage"][0]) {
-      const file = req.files["profileImage"][0];
-      const result = await cloudinary.uploader.upload_stream({ resource_type: "image" }, (error, result) => {
-        if (error) throw error;
-        return result;
-      }).end(file.buffer);
-      profileUrl = result.secure_url;
+      profileUrl = await uploadToCloudinary(req.files["profileImage"][0].buffer, "profiles");
     }
 
     // Hash password
