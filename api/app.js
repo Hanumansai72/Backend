@@ -1,6 +1,5 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const cloudinary = require("cloudinary").v2;
 
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
@@ -42,10 +41,11 @@ app.use(hemlet());
 app.use(express.json());
 
 const multer = require("multer");
+const cloudinary = require("./models/cloudinary"); 
 const UserMain=require("./models/main_userprofile")
 
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
+const mongoURI=process.env.mongoURI_perment;
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
@@ -397,24 +397,7 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 
 
-const uploadToCloudinary = (fileBuffer, folder = "vendors") => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: "image" },
-      (error, result) => {
-        if (error) return reject(error);
-        resolve(result.secure_url);
-      }
-    );
-    stream.end(fileBuffer);
-  });
-};
-
-// Vendor/Product registration route
-app.post("/register", upload.fields([
-  { name: "productImages", maxCount: 10 },
-  { name: "profileImage", maxCount: 1 }
-]), async (req, res) => {
+app.post("/register", async (req, res) => {
   try {
     const {
       Business_Name,
@@ -428,36 +411,26 @@ app.post("/register", upload.fields([
       Password,
       Latitude,
       Longitude,
+      ProductUrls,  // multiple images
+      ProfilePic,   // single image
       ID_Type,
       Account_Number,
       IFSC_Code,
       Charge_Type,
-      Charge_Per_Hour_or_Day
+      Charge_Amount
     } = req.body;
 
-    // Check if email exists
+    // Check for existing vendor email
     const existingVendor = await TempVendor.findOne({ Email_address });
-    if (existingVendor) return res.status(400).json({ message: "Email already exists" });
-
-    // Upload product images to Cloudinary
-    let productUrls = [];
-    if (req.files["productImages"]) {
-      for (const file of req.files["productImages"]) {
-        const url = await uploadToCloudinary(file.buffer, "products");
-        productUrls.push(url);
-      }
+    if (existingVendor) {
+      return res.status(400).json({ message: "Email already exists" });
     }
 
-    // Upload profile image to Cloudinary
-    let profileUrl = "";
-    if (req.files["profileImage"] && req.files["profileImage"][0]) {
-      profileUrl = await uploadToCloudinary(req.files["profileImage"][0].buffer, "profiles");
-    }
+    // Hash the password
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(Password, saltRounds);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(Password, 10);
-
-    // Save vendor to DB
+    // Create new vendor doc
     const vendor = new TempVendor({
       Business_Name,
       Owner_name,
@@ -470,22 +443,24 @@ app.post("/register", upload.fields([
       Password: hashedPassword,
       Latitude,
       Longitude,
-      ProductUrls: productUrls,
-      Profile_Image: profileUrl,
+      ProductUrl: ProductUrls || [],
+      ProfilePic: ProfilePic || "",
       ID_Type,
       Account_Number,
       IFSC_Code,
       Charge_Type,
-      Charge_Per_Hour_or_Day
+      Charge_Amount
     });
 
     await vendor.save();
+
     res.json({ message: "Registration successful" });
   } catch (err) {
-    console.error(err);
+    console.error("Error during registration:", err);
     res.status(500).json({ error: "Server error during registration" });
   }
 });
+
 app.put("/update/userdetailes/:id",async (req,res)=>{
   const userid=req.params.id;
   const {
@@ -693,15 +668,16 @@ app.get("/myprofile/:id",async (req,res)=>{
 })
 
 
-cloudinary.config({
-  cloud_name: "dqxsgmf33",
-  api_key: "188635975854673",
-  api_secret: "XT91-J2eY6-G7TFFlwAiwglYPiQ",
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "product_images",
+    allowed_formats: ["jpg", "jpeg", "png"],
+  },
 });
 
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const storages = multer.memoryStorage();
+const upload = multer({ storage: storages });
 app.get("/fetch/review/:rid",async(req,res)=>{
   try{
   const rid=req.params.rid;
