@@ -152,6 +152,21 @@ app.post("/verifyotp", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+app.post("/loginwith-otp", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const vendor = await Vendor.findOne({ Email_address: email });
+    if (!vendor) {
+      return res.json({ message: "User not found" });
+    }
+
+    return res.json({ message: "Success", vendorId: vendor._id });
+  } catch (err) {
+    console.error("Login with OTP error:", err);
+    return res.status(500).json({ message: "Server error during login with OTP" });
+  }
+});
 
 app.put("/forgetpassword", async (req, res) => {
   try {
@@ -907,19 +922,25 @@ app.post("/api/viewstore", async(req,res)=>{
     console.log(err)
   }
 })
-app.post('/login-with-otp', async (req, res) => {
+app.post("/login-with-otp", async (req, res) => {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: 'Email required' });
 
     try {
-        const user = await UserMain.findOne({ Email: email });
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        const user = await UserMain.findOne({ Emailaddress: email });
 
-        // Optional: generate JWT here instead of storing in localStorage
-        res.json({ message: 'Success', user });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // No password check here — trust OTP verification was done before
+        return res.status(200).json({
+            message: "Success",
+            user,
+            userId: user._id
+        });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Login failed' });
+        console.error("Error logging in with OTP:", err);
+        res.status(500).json({ message: "Server error", error: err.message });
     }
 });
 
