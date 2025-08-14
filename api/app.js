@@ -401,7 +401,19 @@ app.delete("/delete/:itemId", async (req, res) => {
 });
 
 
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => ({
+    folder: 'apnamestri',          // Cloudinary auto-creates folder
+    resource_type: 'image',
+    public_id: `${Date.now()}-${file.originalname}`,
+  }),
+});
+
+const upload = multer({ storage });
 
 
 
@@ -681,19 +693,6 @@ app.get("/myprofile/:id",async (req,res)=>{
 })
 
 
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => ({
-    folder: 'apnamestri',          // Cloudinary auto-creates folder
-    resource_type: 'image',
-    public_id: `${Date.now()}-${file.originalname}`,
-  }),
-});
-
-const upload = multer({ storage });
 
 
 app.get("/fetch/review/:rid",async(req,res)=>{
