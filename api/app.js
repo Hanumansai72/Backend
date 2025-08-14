@@ -45,7 +45,7 @@ const multer = require("multer");
 const UserMain=require("./models/main_userprofile")
 
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
-const mongoURI=process.env.mongoURI_perment;
+const mongoURI="mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0";
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
