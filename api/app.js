@@ -948,9 +948,11 @@ app.get("/profesionaldetails/:id",async(req,res)=>{
     const ids=req.params.id
     if(ids){
     const find_details=Vendor.findById(ids)
+    res.json(find_details)
     }
     else{
       console.log("please provide the id to fetch the user profile")
+    
     }
     
 
