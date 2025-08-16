@@ -947,7 +947,7 @@ app.get("/profesionaldetails/:id",async(req,res)=>{
   try{
     const ids=req.params.id
     if(ids){
-    const find_details=Vendor.findById(ids)
+    const find_details=await Vendor.findById(ids)
     res.json(find_details)
     }
     else{
