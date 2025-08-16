@@ -943,7 +943,23 @@ app.post("/login-with-otp", async (req, res) => {
         res.status(500).json({ message: "Server error", error: err.message });
     }
 });
+app.get("/profesionaldetails/:id",async(req,res)=>{
+  try{
+    const ids=req.params.id
+    if(ids){
+    const find_details=Vendor.findById(ids)
+    }
+    else{
+      console.log("please provide the id to fetch the user profile")
+    }
+    
 
+  }
+  catch(err){
+    res.json(err)
+      
+    }
+})
 
 app.get("/wow/:id", async (req, res) => {
   try {
