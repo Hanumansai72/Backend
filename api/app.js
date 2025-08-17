@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const projectupload=require("./models/projectuplad")
 
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
@@ -503,7 +504,37 @@ app.post(
     }
   }
 );
+app.get("/api/projects/:vendorId", async (req, res) => {
+  try {
+    const projects = await projectupload.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 });
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ message: "❌ Server error" });
+  }
+});
+app.post("/projecteatils/vendor", upload.single("image"), async (req, res) => {
+  try {
+    const { title, description, category, vendorId } = req.body;
 
+    if (!req.file || !req.file.path) {
+      return res.status(400).json({ message: "Image upload failed" });
+    }
+
+    const project = new projectupload({
+      vendorId,
+      title,
+      description,
+      category,
+      image: req.file.path, // Cloudinary hosted image URL
+    });
+
+    await project.save();
+    res.status(201).json({ message: "✅ Project uploaded successfully", project });
+  } catch (error) {
+    console.error("Upload Error:", error);
+    res.status(500).json({ message: "❌ Server error" });
+  }
+});
 
 app.put("/update/userdetailes/:id",async (req,res)=>{
   const userid=req.params.id;
