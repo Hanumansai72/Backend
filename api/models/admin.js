@@ -35,6 +35,10 @@ const vendorSchema = new mongoose.Schema({
     },
   },
   description:String,
+  Verified:{
+    type:Boolean,
+    default:false
+  },
 
   registrationDate: {
     type: Date,

@@ -34,6 +34,10 @@ const tempVendorSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
+  Verified:{
+    type:Boolean,
+    default:false
+  },
     description:String,
 
 
