@@ -505,8 +505,9 @@ app.post(
 
       // Check existing vendor
       const existingVendor = await TempVendor.findOne({ Email_address });
-      if (existingVendor)
+      if (existingVendor) {
         return res.status(400).json({ message: "Email already exists" });
+      }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(Password, 10);
@@ -540,8 +541,15 @@ app.post(
       });
 
       await vendor.save();
+
+      // Send welcome email
+      try {
+        await register(Email_address, Owner_name);
+      } catch (mailErr) {
+        console.error("Email sending failed:", mailErr);
+      }
+
       res.json({ message: "Registration successful" });
-      register(Email_address,Owner_name)
 
     } catch (err) {
       console.error("Error during registration:", err);
