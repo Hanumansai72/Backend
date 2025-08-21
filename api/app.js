@@ -520,6 +520,7 @@ app.post(
     <title>Welcome to Apna Mestri</title>
   </head>
   <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+  
     <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
       <h2 style="color: #333;">Welcome to Apna Mestri!</h2>
       <p style="font-size: 16px; color: #555;">
@@ -911,30 +912,40 @@ app.post("/profiledata", async (req, res) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to ApnaMestri</title>
+  <title>Welcome Email</title>
 </head>
-<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-  <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px;">
-    <h2 style="color: #2c3e50; text-align: center;">Welcome to ApnaMestri!</h2>
-    <p style="font-size: 16px; color: #333;">
-      Dear ${Full_Name},
-    </p>
-    <p style="font-size: 16px; color: #333;">
-      Thank you for registering with <b>ApnaMestri</b>. You can now book trusted professionals and buy quality products easily through our platform.
-    </p>
-    <p style="font-size: 16px; color: #333;">
-      Explore services and products today and make your work simpler with just a few clicks.
-    </p>
-    <div style="text-align: center; margin: 20px 0;">
-      <a href="https://apna-mestri.com" style="background-color: #3498db; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px;">Start Exploring</a>
-    </div>
-    <p style="font-size: 14px; color: #777; text-align: center;">
-      Thank you for choosing ApnaMestri.  
-      <br>We’re here to make your life easier!
-    </p>
-  </div>
+<body style="font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" 
+         style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+    <tr>
+      <td align="center" style="padding: 20px; background-color: #004aad;">
+        <!-- CHANGE LOGO HERE -->
+        <img src="https://res.cloudinary.com/dqxsgmf33/image/upload/v1755801310/Changed_logo_dfshkt.png" alt="Apna Mestri Logo" width="150" style="display:block;">
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 30px;">
+        <h2 style="color:#333;">Welcome to Apna Mestri!</h2>
+        <p style="color:#555; font-size: 16px; line-height: 24px;">
+          Thank you for registering as a customer. You can now explore our services and book professionals easily.
+        </p>
+        <p style="text-align: center; margin-top: 20px;">
+          <a href="https://apnamestri.com/login" 
+             style="background-color: #004aad; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            Get Started
+          </a>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="background-color:#f0f0f0; padding: 15px; color:#777; font-size: 14px;">
+        © 2025 Apna Mestri. All rights reserved.
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
+
 `
       
 await register(Emailaddress,Full_Name,htmlContents)
