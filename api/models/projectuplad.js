@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
-const Vendors=require("./admin")
+const Vendor=require("./admin")
 
 
 const ProjectSchema = new mongoose.Schema(
   {
     VendorID:{
     type: mongoose.Schema.Types.ObjectId,
-    ref:Vendors,
+    ref:Vendor,
     required: true
 
         

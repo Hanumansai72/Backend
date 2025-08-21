@@ -521,18 +521,18 @@ app.post("/projecteatils/vendor", upload.single("image"), async (req, res) => {
     }
 
     const project = new projectupload({
-      vendorId,
+      VendorID: vendorId,   // ✅ match schema
       title,
       description,
       category,
-      image: req.file.path, // Cloudinary hosted image URL
+      image: req.file.path, // Cloudinary hosted URL
     });
 
     await project.save();
     res.status(201).json({ message: "✅ Project uploaded successfully", project });
   } catch (error) {
     console.error("Upload Error:", error);
-    res.status(500).json({ message: "❌ Server error" });
+    res.status(500).json({ message: "❌ Server error", error: error.message });
   }
 });
 
