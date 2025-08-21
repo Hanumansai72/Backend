@@ -506,7 +506,7 @@ app.post(
 );
 app.get("/api/projects/:vendorId", async (req, res) => {
   try {
-    const projects = await projectupload.find({ vendorId: req.params.vendorId }).sort({ createdAt: -1 });
+    const projects = await projectupload.find({ VendorID: req.params.vendorId }).sort({ createdAt: -1 });
     res.json(projects);
   } catch (error) {
     res.status(500).json({ message: "❌ Server error" });
