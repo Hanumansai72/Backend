@@ -20,8 +20,8 @@ const vendorSchema = new mongoose.Schema({
   Charge_Per_Hour_or_Day: String,
   Charge_Type: String, // <-- Added here
 
-  Latitude: String,
-  Longitude: String,
+  Latitude: Number,
+  Longitude: Number,
 
   location: {
     type: {

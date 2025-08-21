@@ -1114,8 +1114,9 @@ app.get('/fetch/services', async (req, res) => {
       const userLat = parseFloat(lat);
       const userLng = parseFloat(lng);
 
+      // Geospatial query with Sub_Category array
       services = await Vendor.find({
-        Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") },
+        Sub_Category: { $in: [new RegExp(category.trim(), "i")] }, // FIX
         location: {
           $near: {
             $geometry: {
@@ -1129,35 +1130,19 @@ app.get('/fetch/services', async (req, res) => {
 
       if (services.length === 0) {
         services = await Vendor.find({
-          Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") }
-        }).limit(10); // show top 10 results
+          Sub_Category: { $in: [new RegExp(category.trim(), "i")] } // FIX
+        }).limit(10);
       }
     } else {
       services = await Vendor.find({
-        Sub_Category: { $regex: new RegExp(`^${category.trim()}$`, "i") }
+        Sub_Category: { $in: [new RegExp(category.trim(), "i")] } // FIX
       });
-    }
-
-    // AI-generated content
-    let generatedDescription = '';
-    let generatedTags = [];
-
-    try {
-      const aiResult = await generateDescription(category);
-
-      const descMatch = aiResult.match(/Product Description:\s*(.+)/i);
-      const tagsMatch = aiResult.match(/ProductTags:\s*(.+)/i);
-
-      generatedDescription = descMatch ? descMatch[1].trim() : '';
-      generatedTags = tagsMatch ? tagsMatch[1].split(',').map(t => t.trim()) : [];
-    } catch (err) {
-      console.error("AI Generation failed:", err);
     }
 
     res.json({
       services,
-      description: generatedDescription,
-      tags: generatedTags
+      description: "Find skilled professionals near you.",
+      tags: [category, "services", "local"]
     });
 
   } catch (err) {
