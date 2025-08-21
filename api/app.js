@@ -83,38 +83,7 @@ const transporter = nodemailer.createTransport({
     pass: "JPHqgGOcYjv8CN04",         // Brevo master password
   }
 });
-function register(email,name){
-  const htmlContents=`<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Welcome to Apna Mestri</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
-    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
-      <h2 style="color: #333;">Welcome to Apna Mestri!</h2>
-      <p style="font-size: 16px; color: #555;">
-        Hello ${name},<br><br>
-        Thank you for registering with <strong>Apna Mestri</strong>.  
-        Your account has been successfully created.
-      </p>
-      <p style="font-size: 16px; color: #555;">
-        You can now log in and start adding your services/products.
-      </p>
-      <div style="margin: 20px 0;">
-        <a href="https://apna-mestri-vendor.vercel.app/login" 
-           style="background-color: #007bff; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
-           Go to Vendor Login
-        </a>
-      </div>
-      <p style="font-size: 14px; color: #777;">
-        If you have any questions, feel free to reach out to our support team.<br><br>
-        – The Apna Mestri Team
-      </p>
-    </div>
-  </body>
-</html>
-`
+function register(email,name,htmlContents){
 
 const mailOption = {
     from: '"Apna Mestri" <help@apnamestri.com>',
@@ -544,7 +513,38 @@ app.post(
 
       // Send welcome email
       try {
-        await register(Email_address, Owner_name);
+        const htmlContents=`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome to Apna Mestri</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+      <h2 style="color: #333;">Welcome to Apna Mestri!</h2>
+      <p style="font-size: 16px; color: #555;">
+        Hello ${name},<br><br>
+        Thank you for registering with <strong>Apna Mestri</strong>.  
+        Your account has been successfully created.
+      </p>
+      <p style="font-size: 16px; color: #555;">
+        You can now log in and start adding your services/products.
+      </p>
+      <div style="margin: 20px 0;">
+        <a href="https://apna-mestri-vendor.vercel.app/login" 
+           style="background-color: #007bff; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
+           Go to Vendor Login
+        </a>
+      </div>
+      <p style="font-size: 14px; color: #777;">
+        If you have any questions, feel free to reach out to our support team.<br><br>
+        – The Apna Mestri Team
+      </p>
+    </div>
+  </body>
+</html>
+`
+        await register(Email_address, Owner_name,htmlContents);
       } catch (mailErr) {
         console.error("Email sending failed:", mailErr);
       }
@@ -906,6 +906,42 @@ app.post("/profiledata", async (req, res) => {
     const data = await UserMain.create(dataprofile);
     console.log("Response saved successfully", data);
     res.status(201).json({ message: "Profile saved successfully", data });
+    try{
+      const htmlContents=`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Welcome to ApnaMestri</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+  <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px;">
+    <h2 style="color: #2c3e50; text-align: center;">Welcome to ApnaMestri!</h2>
+    <p style="font-size: 16px; color: #333;">
+      Dear ${Full_Name},
+    </p>
+    <p style="font-size: 16px; color: #333;">
+      Thank you for registering with <b>ApnaMestri</b>. You can now book trusted professionals and buy quality products easily through our platform.
+    </p>
+    <p style="font-size: 16px; color: #333;">
+      Explore services and products today and make your work simpler with just a few clicks.
+    </p>
+    <div style="text-align: center; margin: 20px 0;">
+      <a href="https://apna-mestri.com" style="background-color: #3498db; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px;">Start Exploring</a>
+    </div>
+    <p style="font-size: 14px; color: #777; text-align: center;">
+      Thank you for choosing ApnaMestri.  
+      <br>We’re here to make your life easier!
+    </p>
+  </div>
+</body>
+</html>
+`
+      
+await register(Emailaddress,Full_Name,htmlContents)
+    }
+    catch(err){
+      console.log("Failed to send email",err)
+    }
   } catch (err) {
     console.error("Failed to save data:", err);
     res.status(500).json({ error: "Failed to save profile data" });
