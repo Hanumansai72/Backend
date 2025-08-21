@@ -83,7 +83,48 @@ const transporter = nodemailer.createTransport({
     pass: "JPHqgGOcYjv8CN04",         // Brevo master password
   }
 });
+function register(email,name){
+  const htmlContents=`<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Welcome to Apna Mestri</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+    <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+      <h2 style="color: #333;">Welcome to Apna Mestri!</h2>
+      <p style="font-size: 16px; color: #555;">
+        Hello ${name},<br><br>
+        Thank you for registering with <strong>Apna Mestri</strong>.  
+        Your account has been successfully created.
+      </p>
+      <p style="font-size: 16px; color: #555;">
+        You can now log in and start adding your services/products.
+      </p>
+      <div style="margin: 20px 0;">
+        <a href="https://apna-mestri-vendor.vercel.app/login" 
+           style="background-color: #007bff; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px;">
+           Go to Vendor Login
+        </a>
+      </div>
+      <p style="font-size: 14px; color: #777;">
+        If you have any questions, feel free to reach out to our support team.<br><br>
+        – The Apna Mestri Team
+      </p>
+    </div>
+  </body>
+</html>
+`
 
+const mailOption = {
+    from: '"Apna Mestri" <help@apnamestri.com>',
+    to: email,
+    subject: "Thank You for Registering As Vendor",
+    html: htmlContents,
+  };
+    return transporter.sendMail(mailOption);
+
+}
 function sendOTP(email, otp) {
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; color: #333;">
@@ -500,6 +541,8 @@ app.post(
 
       await vendor.save();
       res.json({ message: "Registration successful" });
+      register(Email_address,Owner_name)
+
     } catch (err) {
       console.error("Error during registration:", err);
       res.status(500).json({ error: "Server error during registration" });
