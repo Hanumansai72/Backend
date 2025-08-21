@@ -459,6 +459,7 @@ app.post(
         IFSC_Code,
         Charge_Type,
         Charge_Per_Hour_or_Day,
+        description
       } = req.body;
 
       // Check existing vendor
@@ -494,6 +495,7 @@ app.post(
         IFSC_Code,
         Charge_Type,
         Charge_Per_Hour_or_Day,
+        description
       });
 
       await vendor.save();
@@ -926,6 +928,7 @@ app.post("/postdatabase/:id", async (req, res) => {
       IFSC_Code: vendor.IFSC_Code || "",
       Charge_Per_Hour_or_Day: vendor.Charge_Per_Hour_or_Day || "",
       Charge_Type: vendor.Charge_Type || "",
+      description:vendor.description
     };
 
     // 3️⃣ Save to final collection

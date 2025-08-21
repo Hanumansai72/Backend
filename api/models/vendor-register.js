@@ -34,6 +34,8 @@ const tempVendorSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
+    description:String,
+
 
   registrationDate: {
     type: Date,
