@@ -88,7 +88,7 @@ function register(email,name,htmlContents){
 const mailOption = {
     from: '"Apna Mestri" <help@apnamestri.com>',
     to: email,
-    subject: "Thank You for Registering As Vendor",
+    subject: "Thank You for Registering ",
     html: htmlContents,
   };
     return transporter.sendMail(mailOption);
