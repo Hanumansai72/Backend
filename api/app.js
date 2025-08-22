@@ -27,8 +27,8 @@ const cloudinary = require("cloudinary").v2;
 
 cloudinary.config({
   cloud_name: "dqxsgmf33",
-  api_key: "188635975854673",
-  api_secret: "XT91-J2eY6-G7TFFlwAiwglYPiQ",
+  api_key: process.env.API_KEY_CLOUDNARY,
+  api_secret: process.env.Api_secret
 });
 
 
@@ -69,7 +69,6 @@ const AdminLoginSchema = new mongoose.Schema({
     password: String
   }
 }, { collection: "Admin-Login" });
-
 const AdminLogin = mongoose.models.AdminLogin || mongoose.model("AdminLogin", AdminLoginSchema);
 
 
@@ -183,19 +182,16 @@ app.put("/forgetpassword", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check required fields
     if (!email || !password) {
       return res.status(400).json({ message: "Email and new password are required" });
     }
 
-    // Find user by email
     const user = await UserMain.findOne({ Emailaddress: email });
 
     if (!user) {
       return res.status(404).json({ message: "User not found with this email" });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update password
@@ -575,18 +571,18 @@ app.post("/projecteatils/vendor", upload.single("image"), async (req, res) => {
     }
 
     const project = new projectupload({
-      VendorID: vendorId,   // ✅ match schema
+      VendorID: vendorId,  
       title,
       description,
       category,
-      image: req.file.path, // Cloudinary hosted URL
+      image: req.file.path, 
     });
 
     await project.save();
-    res.status(201).json({ message: "✅ Project uploaded successfully", project });
+    res.status(201).json({ message: " Project uploaded successfully", project });
   } catch (error) {
     console.error("Upload Error:", error);
-    res.status(500).json({ message: "❌ Server error", error: error.message });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 
@@ -1447,19 +1443,13 @@ const endOfDay = new Date(threeDaysLater.setHours(23, 59, 59, 999));
     })
     .populate('Vendorid')
     .populate('customerid')
-    .sort({ serviceTime: 1 }); // optional: sort jobs by time
-
+    .sort({ serviceTime: 1 }); 
     res.status(200).json(upcomingJobs);
   } catch (err) {
     console.error("Error fetching today's jobs:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-
-
-
-
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
 });
