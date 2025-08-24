@@ -82,12 +82,12 @@ const transporter = nodemailer.createTransport({
     pass: "JPHqgGOcYjv8CN04",         // Brevo master password
   }
 });
-function register(email,name,htmlContents){
+function register(email,name,htmlContents,subject){
 
 const mailOption = {
     from: '"Apna Mestri" <help@apnamestri.com>',
     to: email,
-    subject: "Thank You for Registering ",
+    subject:subject ,
     html: htmlContents,
   };
     return transporter.sendMail(mailOption);
@@ -509,6 +509,7 @@ app.post(
 
       // Send welcome email
       try {
+        const subject="Thanks For Register"
         const htmlContents=`<!DOCTYPE html>
 <html>
   <head>
@@ -541,7 +542,7 @@ app.post(
   </body>
 </html>
 `
-        await register(Email_address, Owner_name,htmlContents);
+        await register(Email_address, Owner_name,htmlContents,subject);
       } catch (mailErr) {
         console.error("Email sending failed:", mailErr);
       }
@@ -904,6 +905,7 @@ app.post("/profiledata", async (req, res) => {
     console.log("Response saved successfully", data);
     res.status(201).json({ message: "Profile saved successfully", data });
     try{
+      const subject="Thanks For Register"
       const htmlContents=`<!DOCTYPE html>
 <html>
 <head>
@@ -944,7 +946,7 @@ app.post("/profiledata", async (req, res) => {
 
 `
       
-await register(Emailaddress,Full_Name,htmlContents)
+await register(Emailaddress,Full_Name,htmlContents,subject)
     }
     catch(err){
       console.log("Failed to send email",err)
@@ -1246,14 +1248,83 @@ app.get('/fetch/services', async (req, res) => {
 });
 
 
-app.post("/api/booking",async(req,res)=>{
-  try{
-    const booking=new booking_service(req.body)
+app.post("/api/booking", async (req, res) => {
+  try {
+    const booking = new booking_service(req.body);
+    const { email, fullName, Vendorid, serviceDate, serviceTime } = req.body;
+
+    // ✅ Fix: await vendor fetch
+    const idfind = await Vendor.findById(Vendorid);
+    if (!idfind) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    const vendoremail = idfind.Email_address;
+    const vendorname = idfind.Owner_name;
+
     await booking.save();
-res.status(200).json({ message: 'Booking saved successfully', booking });
+
+    try {
+      const subject = "Your Booking Successfully Placed";
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Confirmation - Apna Mestri</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 0;">
+  <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+    <tr>
+      <td style="padding: 20px; text-align: center; background-color: #007bff; color: #ffffff; border-radius: 8px 8px 0 0;">
+        <h1>Apna Mestri</h1>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 20px;">
+        <h2 style="color: #333;">Booking Confirmed 🎉</h2>
+        <p style="color: #555;">Hello <strong>${fullName}</strong>,</p>
+        <p style="color: #555;">Thank you for booking a vendor with <strong>Apna Mestri</strong>. Your request has been successfully placed.</p>
+        <p style="color: #555;">Here are your booking details:</p>
+        <ul style="color: #555;">
+          <li><strong>Vendor Name:</strong> ${vendorname}</li>
+          <li><strong>Date & Time:</strong> ${serviceDate} at ${serviceTime}</li>
+        </ul>
+        <p style="color: #555;">Our vendor will reach out to you shortly to confirm further details.</p>
+        <p style="margin-top: 20px; text-align: center;">
+          <a href="https://apnamestri.com" style="background-color: #007bff; color: #ffffff; padding: 10px 20px; text-decoration: none; border-radius: 4px;">View Booking</a>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 15px; text-align: center; background-color: #f1f1f1; color: #777; border-radius: 0 0 8px 8px;">
+        <p>Thank you for choosing <strong>Apna Mestri</strong>.<br>We make services easier for you!</p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+      // ✅ Send to customer
+      await register(email, fullName, htmlContent, subject);
+
+      // ✅ Also notify vendor (optional)
+      const vendorSubject = "New Booking Alert";
+      const vendorContent = `
+        <h3>Hello ${vendorname},</h3>
+        <p>You have received a new booking from <b>${fullName}</b> on Apna Mestri.</p>
+        <p><b>Date & Time:</b> ${serviceDate} at ${serviceTime}</p>
+        <p>Please login to your dashboard for details.</p>
+      `;
+      await register(vendoremail, vendorname, vendorContent, vendorSubject);
+
+    } catch (err) {
+      console.log("Failed to send email", err);
+    }
+
+    res.status(200).json({ message: "Booking saved successfully", booking });
   } catch (err) {
-    console.error('Booking Save Error:', err);
-    res.status(500).json({ error: 'Failed to save booking' });
+    console.error("Booking Save Error:", err);
+    res.status(500).json({ error: "Failed to save booking" });
   }
 });
 
