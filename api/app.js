@@ -1251,9 +1251,10 @@ app.get('/fetch/services', async (req, res) => {
 app.post("/api/booking", async (req, res) => {
   try {
     const booking = new booking_service(req.body);
-    const { email, fullName, Vendorid, serviceDate, serviceTime } = req.body;
 
-    // ✅ Fix: await vendor fetch
+    const { Vendorid, serviceDate, serviceTime, customer } = req.body;
+    const { email, fullName } = customer;  // ✅ extract from customer
+
     const idfind = await Vendor.findById(Vendorid);
     if (!idfind) {
       return res.status(404).json({ message: "Vendor not found" });
@@ -1263,6 +1264,7 @@ app.post("/api/booking", async (req, res) => {
     const vendorname = idfind.Owner_name;
 
     await booking.save();
+
 
     try {
       const subject = "Your Booking Successfully Placed";
