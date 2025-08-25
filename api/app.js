@@ -1370,7 +1370,7 @@ app.post("/servicereview", async (req, res) => {
   try {
     const { orderId, customerId, rating, comment } = req.body;
 
-    const newReview = new Review({
+    const newReview = new revieworder({
       orderId,
       customerId,
       rating,
