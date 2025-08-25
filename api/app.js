@@ -1365,6 +1365,26 @@ app.get("/fetch", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+app.post("/servicereview", async (req, res) => {
+  try {
+    const { orderId, customerId, rating, comment } = req.body;
+
+    const newReview = new Review({
+      orderId,
+      customerId,
+      rating,
+      comment,
+      verifiedPurchase: true
+    });
+
+    await newReview.save();
+    res.status(201).json({ message: "Review submitted successfully", review: newReview });
+  } catch (err) {
+    res.status(500).json({ message: "Error submitting review", error: err.message });
+  }
+});
+
   app.get("/product/:id", async (req, res) => {
   try {
     const product = await productdata.findById(req.params.id);
