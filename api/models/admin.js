@@ -3,8 +3,17 @@ const mongoose = require("mongoose");
 const vendorSchema = new mongoose.Schema({
   Business_Name: String,
   Owner_name: String,
-  Email_address: String,
-  Phone_number: String,
+  Email_address: {
+    type:String,
+    required:true,
+    unique:true
+  },
+
+  Phone_number: {
+    type:String,
+    required:true,
+    unique:true
+  },
   Business_address: String,
   Category: String,
   Sub_Category: [String],
@@ -15,10 +24,18 @@ const vendorSchema = new mongoose.Schema({
   ProductUrls: { type: [String], default: [] }, // Multiple product/business images
   Profile_Image: { type: String, default: "" }, // Single profile image
 
-  Account_Number: String,
-  IFSC_Code: String,
+  Account_Number: {
+    type:String,
+    required:true,
+    unique:true
+  },
+  IFSC_Code: {
+    type:String,
+    required:true,
+    unique:true
+  },
   Charge_Per_Hour_or_Day: String,
-  Charge_Type: String, // <-- Added here
+  Charge_Type: String, // <-- Added this field (e.g., Hourly/Daily)
 
   Latitude: Number,
   Longitude: Number,
@@ -34,11 +51,12 @@ const vendorSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
-  description:String,
   Verified:{
     type:Boolean,
     default:false
   },
+      description:String,
+
 
   registrationDate: {
     type: Date,
