@@ -490,21 +490,25 @@ app.post(
         description
       } = req.body;
 
-      // Check existing vendor
-      const existingVendor = await TempVendor.findOne({ Email_address });
-      if (existingVendor) {
-        return res.status(400).json({ message: "Email already exists" });
+      // ✅ Check duplicate email in BOTH collections
+      const [existingVendor, existingTempVendor] = await Promise.all([
+        Vendor.findOne({ Email_address }),
+        TempVendor.findOne({ Email_address })
+      ]);
+
+      if (existingVendor || existingTempVendor) {
+        return res.status(400).json({ message: "Email already registered" });
       }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(Password, 10);
 
-      // Get uploaded file URLs
+      // File uploads
       const ProductUrls =
         req.files["productImages"]?.map((file) => file.path) || [];
       const Profile_Image = req.files["profileImage"]?.[0]?.path || "";
 
-      // Save vendor
+      // Save vendor into TempVendor
       const vendor = new TempVendor({
         Business_Name,
         Owner_name,
@@ -531,19 +535,15 @@ app.post(
 
       // Send welcome email
       try {
-        const subject="Thanks For Register"
-        const htmlContents=`<!DOCTYPE html>
+        const subject = "Thanks For Register";
+        const htmlContents = `<!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Welcome to Apna Mestri</title>
-  </head>
+  <head><meta charset="UTF-8"><title>Welcome to Apna Mestri</title></head>
   <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
-  
     <div style="max-width: 600px; margin: auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
       <h2 style="color: #333;">Welcome to Apna Mestri!</h2>
       <p style="font-size: 16px; color: #555;">
-        Hello ${name},<br><br>
+        Hello ${Owner_name},<br><br>
         Thank you for registering with <strong>Apna Mestri</strong>.  
         Your account has been successfully created.
       </p>
@@ -562,9 +562,8 @@ app.post(
       </p>
     </div>
   </body>
-</html>
-`
-        await register(Email_address, Owner_name,htmlContents,subject);
+</html>`;
+        await register(Email_address, Owner_name, htmlContents, subject);
       } catch (mailErr) {
         console.error("Email sending failed:", mailErr);
       }
@@ -577,6 +576,7 @@ app.post(
     }
   }
 );
+
 app.get("/api/projects/:vendorId", async (req, res) => {
   try {
     const projects = await projectupload.find({ VendorID: req.params.vendorId })
