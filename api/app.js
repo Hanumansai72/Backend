@@ -405,6 +405,25 @@ app.get('/pending-orders/:id', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+app.get("/vendor", async (req, res) => {
+  try {
+    // Fetch all vendors from the database
+    const vendors = await Vendor.find();
+
+    // Send the list of vendors as JSON
+    res.status(200).json({
+      success: true,
+      data: vendors
+    });
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error. Could not fetch vendors."
+    });
+  }
+});
+
 
 
 app.delete("/delete/:itemId", async (req, res) => {
