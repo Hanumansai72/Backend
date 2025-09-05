@@ -377,9 +377,10 @@ app.put("/update-order-status/:id", async (req, res) => {
 app.get('/pending-orders/:id', async (req, res) => {
   try {
     const { search, page = 1, limit = 10 } = req.query;
+
     const query = {
       vendorid: req.params.id,
-      orderStatus: 'Pending' 
+      orderStatus: { $in: ['Pending', 'Processing'] }  // ✅ fixed
     };
 
     if (search) {
@@ -389,19 +390,21 @@ app.get('/pending-orders/:id', async (req, res) => {
       ];
     }
 
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+
     const orders = await vieworder.find(query)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
 
     const total = await vieworder.countDocuments(query);
 
-    res.status(200).json({ orders, total });
+    res.status(200).json({ orders, total, page: pageNum, limit: limitNum });
   } catch (err) {
     console.error('Error fetching pending orders:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
 
 
 app.delete("/delete/:itemId", async (req, res) => {
@@ -853,6 +856,7 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
+      discountedprice
     } = req.body;
 
     // Assuming you've already uploaded to Cloudinary and received secure URLs in req.body.ProductUrls (array)
@@ -869,6 +873,7 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
       ProductSubCategory,
       ProductLocation,
       ProductUrl: ProductUrls, 
+      discountedprice
     });
 
     const savedProduct = await newProduct.save();
@@ -1366,24 +1371,7 @@ app.get("/fetch", async (req, res) => {
   }
 });
 
-app.post("/servicereview", async (req, res) => {
-  try {
-    const { orderId, customerId, rating, comment } = req.body;
 
-    const newReview = new revieworder({
-      orderId,
-      customerId,
-      rating,
-      comment,
-      verifiedPurchase: true
-    });
-
-    await newReview.save();
-    res.status(201).json({ message: "Review submitted successfully", review: newReview });
-  } catch (err) {
-    res.status(500).json({ message: "Error submitting review", error: err.message });
-  }
-});
 
   app.get("/product/:id", async (req, res) => {
   try {
