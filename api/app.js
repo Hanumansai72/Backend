@@ -55,13 +55,21 @@ const UserMain=require("./models/main_userprofile")
 const mongoURI=process.env.mongoURI_perment;
 //const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
-mongoose.connect(mongoURI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch(err => {
-    console.error("MongoDB connection error:", err);
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  maxPoolSize: 10, // ✅ limit connections to avoid overload
+})
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err);
     process.exit(1);
   });
-
+process.on("SIGINT", async () => {
+  await mongoose.connection.close();
+  console.log("🔌 MongoDB connection closed");
+  process.exit(0);
+});
 const AdminLoginSchema = new mongoose.Schema({
   login: {
     id: String,
