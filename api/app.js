@@ -153,7 +153,7 @@ app.get("/wallet/:vendorId", async (req, res) => {
     }
 
     // 2. Get all completed bookings of vendor
-    const completedBookings = await Booking.find({
+    const completedBookings = await booking_service.find({
       Vendorid: vendorId,
       status: "Completed",
     });
