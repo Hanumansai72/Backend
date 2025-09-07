@@ -19,6 +19,7 @@ const otpsender=require("./models/otpschema")
 const ratelimter=require("express-rate-limit")
 const hemlet=require("helmet")
 require('dotenv').config();
+const Wallet=require("./models/wallet")
 
 
 const cors = require('cors');
@@ -117,6 +118,70 @@ function sendOTP(email, otp) {
 
   return transporter.sendMail(mailOptions);
 }
+async function addTransaction(vendorId, orderId, totalAmount) {
+  let wallet = await Wallet.findOne({ vendorId });
+  if (!wallet) {
+    wallet = new Wallet({ vendorId });
+  }
+
+  // Commission (5%)
+  const commission = totalAmount * 0.05;
+  const vendorEarning = totalAmount - commission;
+
+  // Add credit transaction (vendor earning)
+  wallet.transactions.push({
+    orderId,
+    amount: vendorEarning,
+    type: "credit",
+    description: `Payment received for Order #${orderId}`
+  });
+
+  // Add debit transaction (commission)
+  wallet.transactions.push({
+    orderId,
+    amount: commission,
+    type: "debit",
+    description: `5% Commission charged for Order #${orderId}`
+  });
+
+  // Update balance and commissionDue
+  wallet.balance += vendorEarning;
+  wallet.commissionDue += commission;
+
+  await wallet.save();
+  return wallet;
+}
+// Get vendor wallet
+app.get("/wallet/:vendorId", async (req, res) => {
+  try {
+    const wallet = await Wallet.findOne({ vendorId: req.params.vendorId });
+    if (!wallet) return res.status(404).json({ message: "Wallet not found" });
+    res.json(wallet);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark booking as completed and update wallet
+app.post("/complete-booking/:id", async (req, res) => {
+  try {
+    const booking = await booking_service.findById(req.params.id);
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    booking.status = "Completed";
+    await booking.save();
+
+    const wallet = await addTransaction(
+      booking.Vendorid,
+      booking._id,
+      booking.totalAmount
+    );
+
+    res.json({ message: "Booking completed and wallet updated", wallet });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post("/sendotp", async (req, res) => {
   try {
