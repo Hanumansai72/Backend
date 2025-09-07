@@ -4,7 +4,7 @@ const vendor=require("./admin");
 const OrderDetails = require("./productorders");
 
 const productWalletSchema = new mongoose.Schema({
-  productId: {
+  vendorid: {
     type: mongoose.Schema.Types.ObjectId,
     ref: vendor,
     required: true,

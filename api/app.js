@@ -119,13 +119,13 @@ function sendOTP(email, otp) {
 
   return transporter.sendMail(mailOptions);
 }
-async function addProductTransaction(productId, orderId, totalAmount) {
-  let wallet = await productwallet.findOne({ productId });
+async function addProductTransaction(vendorid, orderId, totalAmount) {
+  let wallet = await productwallet.findOne({ vendorid });
 
   // If wallet doesn't exist, create it
   if (!wallet) {
     wallet = new productwallet({
-      productId,
+      vendorid,
       balance: 0,
       commissionDue: 0,
       transactions: []
@@ -134,33 +134,35 @@ async function addProductTransaction(productId, orderId, totalAmount) {
 
   // Commission is 5%
   const commission = totalAmount * 0.05;
-  const productEarning = totalAmount - commission;
+  const vendorEarning = totalAmount - commission;
 
   // Add transaction
   wallet.transactions.push({
     orderId,
-    amount: productEarning,
+    amount: vendorEarning,
     commission,
     type: "credit",
     description: `Payment received for Order #${orderId}`
   });
 
   // Update balance & commissionDue
-  wallet.balance += productEarning;
+  wallet.balance += vendorEarning;
   wallet.commissionDue += commission;
 
   await wallet.save();
   return wallet;
 }
-app.get("/product-wallet/:productId", async (req, res) => {
+
+// API Route
+app.get("/product-wallet/:vendorid", async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { vendorid } = req.params;
 
     // 1. Find or create wallet
-    let wallet = await productwallet.findOne({ productId });
+    let wallet = await productwallet.findOne({ vendorid });
     if (!wallet) {
       wallet = new productwallet({
-        productId,
+        vendorid,
         balance: 0,
         commissionDue: 0,
         transactions: []
@@ -168,9 +170,9 @@ app.get("/product-wallet/:productId", async (req, res) => {
       await wallet.save();
     }
 
-    // 2. Get all completed & paid orders for this product
+    // 2. Get all completed & paid orders for this vendor
     const completedOrders = await vieworder.find({
-      productId,
+      vendorid,
       orderStatus: "Delivered",
       paymentStatus: "Paid"
     });
@@ -183,7 +185,7 @@ app.get("/product-wallet/:productId", async (req, res) => {
 
       if (!exists) {
         wallet = await addProductTransaction(
-          productId,
+          vendorid,
           order._id,
           order.totalPrice
         );
