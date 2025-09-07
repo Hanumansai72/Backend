@@ -1432,6 +1432,7 @@ app.post("/api/booking", async (req, res) => {
     const { email, fullName } = customer;  // ✅ extract from customer
 
     const idfind = await Vendor.findById(Vendorid);
+    const vendorprice= idfind.Charge_Per_Hour_or_Day
     if (!idfind) {
       return res.status(404).json({ message: "Vendor not found" });
     }
@@ -1499,7 +1500,7 @@ app.post("/api/booking", async (req, res) => {
       console.log("Failed to send email", err);
     }
 
-    res.status(200).json({ message: "Booking saved successfully", booking });
+    res.status(200).json({ message: "Booking saved successfully", booking ,vendorprice});
   } catch (err) {
     console.error("Booking Save Error:", err);
     res.status(500).json({ error: "Failed to save booking" });
