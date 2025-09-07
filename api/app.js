@@ -154,13 +154,24 @@ async function addTransaction(vendorId, orderId, totalAmount) {
 // Get vendor wallet
 app.get("/wallet/:vendorId", async (req, res) => {
   try {
-    const wallet = await Wallet.findOne({ vendorId: req.params.vendorId });
-    if (!wallet) return res.status(404).json({ message: "Wallet not found" });
+    let wallet = await Wallet.findOne({ vendorId: req.params.vendorId });
+
+    // ✅ Auto-create wallet if not found
+    if (!wallet) {
+      wallet = await Wallet.create({
+        vendorId: req.params.vendorId,
+        balance: 0,
+        commissionDue: 0,
+        transactions: []
+      });
+    }
+
     res.json(wallet);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Mark booking as completed and update wallet
 app.post("/complete-booking/:id", async (req, res) => {
