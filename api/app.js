@@ -118,29 +118,36 @@ function sendOTP(email, otp) {
 
   return transporter.sendMail(mailOptions);
 }
-async function addTransaction(vendorId, orderId, amount) {
+
+async function addTransaction(vendorId, orderId, totalAmount) {
   let wallet = await Wallet.findOne({ vendorId });
+
   if (!wallet) {
-    wallet = new Wallet({ vendorId, transactions: [], balance: 0 });
+    wallet = new Wallet({ vendorId, balance: 0, commissionDue: 0, transactions: [] });
   }
 
-  // Commission = 10% (example)
-  const commission = amount * 0.1;
-  const creditedAmount = amount - commission;
+  // Calculate commission (5%)
+  const commission = totalAmount * 0.05;
+  const vendorEarning = totalAmount - commission;
 
+  // Add transaction for vendor earning
   wallet.transactions.push({
     orderId,
-    amount,
-    commission,
+    amount: vendorEarning,
     type: "credit",
-    date: new Date(),
+    commission,
+    description: `Payment received for Order #${orderId}`,
   });
 
-  wallet.balance += creditedAmount;
-  await wallet.save();
+  // Update wallet balance and commissionDue
+  wallet.balance += vendorEarning;
+  wallet.commissionDue += commission;
 
+  await wallet.save();
   return wallet;
 }
+
+
 app.get("/wallet/:vendorId", async (req, res) => {
   try {
     const { vendorId } = req.params;
@@ -148,7 +155,9 @@ app.get("/wallet/:vendorId", async (req, res) => {
     // 1. Find or create wallet
     let wallet = await Wallet.findOne({ vendorId });
     if (!wallet) {
-      wallet = new Wallet({ vendorId, transactions: [], balance: 0 });
+      wallet = new Wallet({ vendorId, balance: 0, commissionDue: 0, transactions: [] });
+
+
       await wallet.save();
     }
 
