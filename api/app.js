@@ -1422,6 +1422,23 @@ app.get('/fetch/services', async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+// GET /api/vendor/:vendorId/price
+app.get("/api/vendor/:vendorId/price", async (req, res) => {
+  try {
+    const { vendorId } = req.params;
+    const vendor = await Vendor.findById(vendorId);
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    res.status(200).json({ vendorPrice: vendor.Charge_Per_Hour_or_Day });
+  } catch (err) {
+    console.error("Error fetching vendor price:", err);
+    res.status(500).json({ error: "Failed to fetch vendor price" });
+  }
+});
+
 
 
 app.post("/api/booking", async (req, res) => {
