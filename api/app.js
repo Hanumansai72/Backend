@@ -118,77 +118,64 @@ function sendOTP(email, otp) {
 
   return transporter.sendMail(mailOptions);
 }
-async function addTransaction(vendorId, orderId, totalAmount) {
+async function addTransaction(vendorId, orderId, amount) {
   let wallet = await Wallet.findOne({ vendorId });
   if (!wallet) {
-    wallet = new Wallet({ vendorId });
+    wallet = new Wallet({ vendorId, transactions: [], balance: 0 });
   }
 
-  // Commission (5%)
-  const commission = totalAmount * 0.05;
-  const vendorEarning = totalAmount - commission;
+  // Commission = 10% (example)
+  const commission = amount * 0.1;
+  const creditedAmount = amount - commission;
 
-  // Add credit transaction (vendor earning)
   wallet.transactions.push({
     orderId,
-    amount: vendorEarning,
+    amount,
+    commission,
     type: "credit",
-    description: `Payment received for Order #${orderId}`
+    date: new Date(),
   });
 
-  // Add debit transaction (commission)
-  wallet.transactions.push({
-    orderId,
-    amount: commission,
-    type: "debit",
-    description: `5% Commission charged for Order #${orderId}`
-  });
-
-  // Update balance and commissionDue
-  wallet.balance += vendorEarning;
-  wallet.commissionDue += commission;
-
+  wallet.balance += creditedAmount;
   await wallet.save();
+
   return wallet;
 }
-// Get vendor wallet
 app.get("/wallet/:vendorId", async (req, res) => {
   try {
-    let wallet = await Wallet.findOne({ vendorId: req.params.vendorId });
+    const { vendorId } = req.params;
 
-    // ✅ Auto-create wallet if not found
+    // 1. Find or create wallet
+    let wallet = await Wallet.findOne({ vendorId });
     if (!wallet) {
-      wallet = await Wallet.create({
-        vendorId: req.params.vendorId,
-        balance: 0,
-        commissionDue: 0,
-        transactions: []
-      });
+      wallet = new Wallet({ vendorId, transactions: [], balance: 0 });
+      await wallet.save();
     }
 
+    // 2. Get all completed bookings of vendor
+    const completedBookings = await Booking.find({
+      Vendorid: vendorId,
+      status: "Completed",
+    });
+
+    // 3. For each booking, check if already added to wallet
+    for (const booking of completedBookings) {
+      const alreadyExists = wallet.transactions.some(
+        (txn) => txn.orderId.toString() === booking._id.toString()
+      );
+
+      if (!alreadyExists) {
+        // 💰 Add transaction with commission
+        wallet = await addTransaction(
+          vendorId,
+          booking._id,
+          booking.totalAmount
+        );
+      }
+    }
+
+    // 4. Return updated wallet
     res.json(wallet);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// Mark booking as completed and update wallet
-app.post("/complete-booking/:id", async (req, res) => {
-  try {
-    const booking = await booking_service.findById(req.params.id);
-    if (!booking) return res.status(404).json({ message: "Booking not found" });
-
-    booking.status = "Completed";
-    await booking.save();
-
-    const wallet = await addTransaction(
-      booking.Vendorid,
-      booking._id,
-      booking.totalAmount
-    );
-
-    res.json({ message: "Booking completed and wallet updated", wallet });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
