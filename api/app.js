@@ -19,6 +19,7 @@ const otpsender=require("./models/otpschema")
 const ratelimter=require("express-rate-limit")
 const hemlet=require("helmet")
 require('dotenv').config();
+const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
 
 
@@ -118,6 +119,83 @@ function sendOTP(email, otp) {
 
   return transporter.sendMail(mailOptions);
 }
+async function addProductTransaction(productId, orderId, totalAmount) {
+  let wallet = await productwallet.findOne({ productId });
+
+  // If wallet doesn't exist, create it
+  if (!wallet) {
+    wallet = new productwallet({
+      productId,
+      balance: 0,
+      commissionDue: 0,
+      transactions: []
+    });
+  }
+
+  // Commission is 5%
+  const commission = totalAmount * 0.05;
+  const productEarning = totalAmount - commission;
+
+  // Add transaction
+  wallet.transactions.push({
+    orderId,
+    amount: productEarning,
+    commission,
+    type: "credit",
+    description: `Payment received for Order #${orderId}`
+  });
+
+  // Update balance & commissionDue
+  wallet.balance += productEarning;
+  wallet.commissionDue += commission;
+
+  await wallet.save();
+  return wallet;
+}
+app.get("/product-wallet/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    // 1. Find or create wallet
+    let wallet = await productwallet.findOne({ productId });
+    if (!wallet) {
+      wallet = new productwallet({
+        productId,
+        balance: 0,
+        commissionDue: 0,
+        transactions: []
+      });
+      await wallet.save();
+    }
+
+    // 2. Get all completed & paid orders for this product
+    const completedOrders = await vieworder.find({
+      productId,
+      orderStatus: "Delivered",
+      paymentStatus: "Paid"
+    });
+
+    // 3. For each order, check if already added
+    for (const order of completedOrders) {
+      const exists = wallet.transactions.some(
+        txn => txn.orderId.toString() === order._id.toString()
+      );
+
+      if (!exists) {
+        wallet = await addProductTransaction(
+          productId,
+          order._id,
+          order.totalPrice
+        );
+      }
+    }
+
+    res.json(wallet);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 async function addTransaction(vendorId, orderId, totalAmount) {
   let wallet = await Wallet.findOne({ vendorId });
