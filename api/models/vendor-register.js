@@ -1,8 +1,20 @@
 const mongoose = require("mongoose");
 
 const tempVendorSchema = new mongoose.Schema({
-  Business_Name: String,
-  Owner_name: String,
+  Business_Name:{
+    
+    type:String,
+    required:true,
+    unique:true
+  },
+  
+  Owner_name: 
+    {
+    type:String,
+    required:true,
+    unique:true
+  
+  },
   Email_address: {
     type:String,
     required:true,
@@ -26,12 +38,10 @@ const tempVendorSchema = new mongoose.Schema({
 
   Account_Number: {
     type:String,
-    required:true,
     unique:true
   },
   IFSC_Code: {
     type:String,
-    required:true,
     unique:true
   },
   Charge_Per_Hour_or_Day: String,
