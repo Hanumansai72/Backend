@@ -26,12 +26,10 @@ const vendorSchema = new mongoose.Schema({
 
   Account_Number: {
     type:String,
-    required:true,
     unique:true
   },
   IFSC_Code: {
     type:String,
-    required:true,
     unique:true
   },
   Charge_Per_Hour_or_Day: String,
