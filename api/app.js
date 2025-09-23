@@ -676,7 +676,7 @@ app.post(
           ? Sub_Category
           : [Sub_Category],
         Tax_ID,
-        Password: hashedPassword, // null for Google signup
+        Password: hashedPassword, 
         Latitude,
         Longitude,
         ProductUrls,
