@@ -818,6 +818,40 @@ app.post("/postusername", async (req, res) => {
     return res.status(500).json({ message: "Server error during login" });
   }
 });
+app.post('/google-login', async (req, res) => {
+  const { email, name } = req.body;
+
+  try {
+    // Try to find vendor by email
+    const vendor = await Vendor.findOne({ Email_address: email });
+    const tempVendor = await TempVendor.findOne({ Email_address: email });
+
+    if (vendor) {
+      // Vendor found and verified? Return success
+      if (vendor.Verified) {
+        return res.json({ message: 'Success', vendorId: vendor._id });
+      } else {
+        return res.json({ message: 'User pending approval' });
+      }
+    } else if (tempVendor) {
+      return res.json({ message: 'User pending approval' });
+    } else {
+      // Optionally auto-register new Google user here or ask front end to redirect to sign up
+      // For auto-register example:
+      const newVendor = new TempVendor({
+        Owner_name: name,
+        Email_address: email,
+        isGoogleSignup: true,
+      });
+      await newVendor.save();
+      return res.json({ message: 'User pending approval' });
+    }
+  } catch (error) {
+    console.error('Google login error:', error);
+    return res.status(500).json({ message: 'Server error during Google login' });
+  }
+});
+
 app.post("/loginwith-otp", async (req, res) => {
   const { email } = req.body;
 
