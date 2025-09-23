@@ -828,7 +828,7 @@ app.post('/google-login', async (req, res) => {
 
     if (vendor) {
       // Vendor found and verified? Return success
-      if (vendor.Verified) {
+      if (vendor) {
         return res.json({ message: 'Success', vendorId: vendor._id });
       } else {
         return res.json({ message: 'User pending approval' });
