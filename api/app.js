@@ -676,7 +676,7 @@ app.post(
           ? Sub_Category
           : [Sub_Category],
         Tax_ID,
-        Password: hashedPassword, 
+        Password: hashedPassword, // null for Google signup
         Latitude,
         Longitude,
         ProductUrls,
@@ -692,7 +692,7 @@ app.post(
 
       await vendor.save();
 
-      
+      // ✅ Send welcome email (works for both Google + normal signup)
       try {
         const subject = "Thanks For Register";
         const htmlContents = `<!DOCTYPE html>
