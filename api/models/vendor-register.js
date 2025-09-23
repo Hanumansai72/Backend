@@ -4,14 +4,12 @@ const tempVendorSchema = new mongoose.Schema({
   Business_Name:{
     
     type:String,
-    required:true,
     unique:true
   },
   
   Owner_name: 
     {
     type:String,
-    required:true,
     unique:true
   
   },
@@ -23,7 +21,6 @@ const tempVendorSchema = new mongoose.Schema({
 
   Phone_number: {
     type:String,
-    required:true,
     unique:true
   },
   Business_address: String,

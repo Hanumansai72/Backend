@@ -11,7 +11,6 @@ const vendorSchema = new mongoose.Schema({
 
   Phone_number: {
     type:String,
-    required:true,
     unique:true
   },
   Business_address: String,
