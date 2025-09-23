@@ -639,28 +639,32 @@ app.post(
         IFSC_Code,
         Charge_Type,
         Charge_Per_Hour_or_Day,
-        description
+        description,
+        isGoogleSignup // 👈 flag from frontend
       } = req.body;
 
       // ✅ Check duplicate email in BOTH collections
       const [existingVendor, existingTempVendor] = await Promise.all([
         Vendor.findOne({ Email_address }),
-        TempVendor.findOne({ Email_address })
+        TempVendor.findOne({ Email_address }),
       ]);
 
       if (existingVendor || existingTempVendor) {
         return res.status(400).json({ message: "Email already registered" });
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(Password, 10);
+      // ✅ Handle Password (Google signup won’t have one)
+      let hashedPassword = null;
+      if (!isGoogleSignup && Password) {
+        hashedPassword = await bcrypt.hash(Password, 10);
+      }
 
-      // File uploads
+      // ✅ File uploads
       const ProductUrls =
         req.files["productImages"]?.map((file) => file.path) || [];
       const Profile_Image = req.files["profileImage"]?.[0]?.path || "";
 
-      // Save vendor into TempVendor
+      // ✅ Save vendor into TempVendor
       const vendor = new TempVendor({
         Business_Name,
         Owner_name,
@@ -668,9 +672,11 @@ app.post(
         Phone_number,
         Business_address,
         Category,
-        Sub_Category: Array.isArray(Sub_Category) ? Sub_Category : [Sub_Category],
+        Sub_Category: Array.isArray(Sub_Category)
+          ? Sub_Category
+          : [Sub_Category],
         Tax_ID,
-        Password: hashedPassword,
+        Password: hashedPassword, // null for Google signup
         Latitude,
         Longitude,
         ProductUrls,
@@ -680,12 +686,13 @@ app.post(
         IFSC_Code,
         Charge_Type,
         Charge_Per_Hour_or_Day,
-        description
+        description,
+        isGoogleSignup: isGoogleSignup || false, // 👈 store flag
       });
 
       await vendor.save();
 
-      // Send welcome email
+      // ✅ Send welcome email (works for both Google + normal signup)
       try {
         const subject = "Thanks For Register";
         const htmlContents = `<!DOCTYPE html>
@@ -721,13 +728,13 @@ app.post(
       }
 
       res.json({ message: "Registration successful" });
-
     } catch (err) {
       console.error("Error during registration:", err);
       res.status(500).json({ error: "Server error during registration" });
     }
   }
 );
+
 
 app.get("/api/projects/:vendorId", async (req, res) => {
   try {
