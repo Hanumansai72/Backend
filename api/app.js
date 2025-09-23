@@ -692,7 +692,7 @@ app.post(
 
       await vendor.save();
 
-      // ✅ Send welcome email (works for both Google + normal signup)
+      
       try {
         const subject = "Thanks For Register";
         const htmlContents = `<!DOCTYPE html>
