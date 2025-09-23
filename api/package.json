@@ -17,6 +17,8 @@
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.1.0",
+      "cors": "^2.8.5",
+
     "mongoose": "^8.17.1",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
