@@ -55,7 +55,6 @@ app.use(express.json());
 const UserMain=require("./models/main_userprofile")
 
 const mongoURI=process.env.mongoURI_perment;
-//const mongoURI = "mongodb://127.0.0.1:27017/apana_mestri";
 
 mongoose.connect(mongoURI)
   .then(() => console.log("MongoDB Connected"))
