@@ -767,65 +767,124 @@ app.post("/projecteatils/vendor", upload.single("image"), async (req, res) => {
   }
 });
 
-app.put("/update/userdetailes/:id",async (req,res)=>{
-  const userid=req.params.id;
-  const {
-    Business_Name,
-    Owner_name,
-    Email_address,
-    Phone_number,
-    Business_address,
-    Tax_ID,
-    Password,
-    Charge_Per_Hour_or_Day,
-    IFSC_Code,
-    Account_Number,
-    Charge_Type
-  }=req.body
-  const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(Password, saltRounds);
+app.put(
+  "/update/userdetailes/:id",
+  upload.fields([
+    { name: "productImages", maxCount: 10 },
+    { name: "profileImage", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const userid = req.params.id;
 
-  const upatedesahhs=await Vendor.findByIdAndUpdate(userid,{
-    Business_Name,
-    Owner_name,
-    Email_address,
-    Phone_number,
-    Business_address,
-    Tax_ID,
-    Password:hashedPassword,
-    Charge_Per_Hour_or_Day,
-    IFSC_Code,
-    Account_Number,
-    Charge_Type
-  },{ new: true }
-  );
+      // All fields from registration - add missing ones as needed!
+      let {
+        Business_Name,
+        Owner_name,
+        Email_address,
+        Phone_number,
+        Business_address,
+        Category,
+        Sub_Category,
+        Tax_ID,
+        Password,
+        Latitude,
+        Longitude,
+        ID_Type,
+        Account_Number,
+        IFSC_Code,
+        Charge_Type,
+        Charge_Per_Hour_or_Day,
+        description,
+        isGoogleSignup
+      } = req.body;
 
-  res.status(200).json({ message: "User updated", data: upatedesahhs });
-});
+      // Handle files
+      let ProductUrls = [];
+      let Profile_Image = "";
 
+      // Upload product images to Cloudinary if present
+      if (req.files && req.files["productImages"]) {
+        for (const file of req.files["productImages"]) {
+          const result = await cloudinary.uploader.upload_stream(
+            { resource_type: "image" },
+            (error, result) => {
+              if (result && result.secure_url) {
+                ProductUrls.push(result.secure_url);
+              }
+            }
+          ).end(file.buffer);
+        }
+      }
 
-app.post("/postusername", async (req, res) => {
-  const { username, password } = req.body;
+      // Upload profile image to Cloudinary if present
+      if (req.files && req.files["profileImage"] && req.files["profileImage"][0]) {
+        const file = req.files["profileImage"][0];
+        await cloudinary.uploader.upload_stream(
+          { resource_type: "image" },
+          (error, result) => {
+            if (result && result.secure_url) {
+              Profile_Image = result.secure_url;
+            }
+          }
+        ).end(file.buffer);
+      }
 
-  try {
-    const vendor = await Vendor.findOne({ Email_address: username });
+      // Hash password (only if changed/present – backend can check old hash to avoid re-hashing)
+      let hashedPassword = undefined;
+      if (Password) {
+        const saltRounds = 10;
+        hashedPassword = await bcrypt.hash(Password, saltRounds);
+      }
 
-    if (!vendor) {
-      return res.json({ message: "User not found" });
+      // Fix subcategory input (allow array/string from client)
+      if (Sub_Category && typeof Sub_Category === "string") {
+        Sub_Category = Sub_Category.split(",").map(s => s.trim());
+      }
+
+      // Update vendor fields; build only changed fields
+      const updatedFields = {
+        Business_Name,
+        Owner_name,
+        Email_address,
+        Phone_number,
+        Business_address,
+        Category,
+        Sub_Category,
+        Tax_ID,
+        Latitude,
+        Longitude,
+        ID_Type,
+        Account_Number,
+        IFSC_Code,
+        Charge_Type,
+        Charge_Per_Hour_or_Day,
+        description,
+        ProductUrls,           // array of images from Cloudinary
+        Profile_Image,         // profile photo URL
+        isGoogleSignup
+      };
+      if (hashedPassword) updatedFields.Password = hashedPassword;
+
+      // Remove empty fields (allows patch-like update)
+      Object.keys(updatedFields).forEach(
+        key => updatedFields[key] === undefined && delete updatedFields[key]
+      );
+
+      const updatedVendor = await Vendor.findByIdAndUpdate(
+        userid,
+        updatedFields,
+        { new: true }
+      );
+
+      res.status(200).json({ message: "User updated", data: updatedVendor });
+    } catch (err) {
+      console.error("Update failed:", err);
+      res.status(500).json({ message: "Update failed", error: err });
     }
-
-    const isMatch = await bcrypt.compare(password, vendor.Password);
-
-    if (isMatch) {
-      return res.json({ message: "Success", vendorId: vendor._id });
-    } else {
-      return res.json({ message: "Incorrect password" });
-    }
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ message: "Server error during login" });
   }
-});
+);
+
 app.post('/google-login', async (req, res) => {
   const { email, name } = req.body;
 
