@@ -776,7 +776,11 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
     Phone_number,
     Business_address,
     Tax_ID,
-    Password
+    Password,
+    Charge_Per_Hour_or_Day,
+    IFSC_Code,
+    Account_Number,
+    Charge_Type
   }=req.body
   const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(Password, saltRounds);
@@ -788,7 +792,11 @@ app.put("/update/userdetailes/:id",async (req,res)=>{
     Phone_number,
     Business_address,
     Tax_ID,
-    Password:hashedPassword
+    Password:hashedPassword,
+    Charge_Per_Hour_or_Day,
+    IFSC_Code,
+    Account_Number,
+    Charge_Type
   },{ new: true }
   );
 
