@@ -11,7 +11,7 @@ const reviewSchema = new mongoose.Schema({
   },
   vendorids:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: vendorids,
+    ref:Vendor,
 
   }
 
