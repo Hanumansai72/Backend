@@ -1562,6 +1562,21 @@ app.get("/api/vendor/:vendorId/price", async (req, res) => {
 });
 
 
+app.get("/fetch/location/booking/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const booking_find = await booking_service.findOne({ customerid: id }).sort({ createdAt: -1 }); 
+=
+    if (!booking_find) return res.status(404).json({ message: "No booking found" });
+
+    res.json({
+      address: booking_find.address,
+      customer: booking_find.customer
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch booking", details: err.message });
+  }
+});
 
 app.post("/api/booking", async (req, res) => {
   try {
