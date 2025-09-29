@@ -1090,6 +1090,19 @@ app.get("/fetch/review/:rid",async(req,res)=>{
   }
 
 })
+app.get("/fetch/review/service/:rid",async(req,res)=>{
+  try{
+  const rid=req.params.rid;
+  const getreview=await revieworder.find({vid:rid})
+  res.json({getreview})
+
+  }
+  catch(err){
+    res.json({err})
+
+  }
+
+})
 app.post("/review/:vid", async (req, res) => {
   try {
     const vid = req.params.vid;
