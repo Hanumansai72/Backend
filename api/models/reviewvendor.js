@@ -13,7 +13,7 @@ const reviewSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref:Vendor,
 
-  }
+  },
 
 vid: {
     type: mongoose.Schema.Types.ObjectId,
