@@ -1093,7 +1093,7 @@ app.get("/fetch/review/:rid",async(req,res)=>{
 app.get("/fetch/review/service/:rid",async(req,res)=>{
   try{
   const rid=req.params.rid;
-  const getreview=await revieworder.find({vid:rid})
+  const getreview=await revieworder.find({vendorids:rid})
   res.json({getreview})
 
   }
@@ -1110,6 +1110,7 @@ app.post("/review/:vid", async (req, res) => {
     const {
       productId,
       customerName,
+      vendorids,
       rating,
       comment
     } = req.body;
@@ -1119,6 +1120,7 @@ app.post("/review/:vid", async (req, res) => {
       vid, 
       customerName,
       rating,
+      vendorids,
       comment
     });
 

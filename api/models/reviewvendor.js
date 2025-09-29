@@ -9,6 +9,11 @@ const reviewSchema = new mongoose.Schema({
     ref: Product,
     
   },
+  vendorids:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: vendorids,
+
+  }
 
 vid: {
     type: mongoose.Schema.Types.ObjectId,
