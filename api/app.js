@@ -155,9 +155,9 @@ app.post("/google-login", async (req, res) => {
   const { email, name, picture } = req.body;
 
   try {
-    let user = await UserMain.findOne({ Email: email });
+    let user = await UserMain.findOne({ Emailaddress: email });
     if (!user) {
-      user = await UserMain.create({ Full_Name: name, Email: email, Picture: picture });
+      user = await UserMain.create({ Full_Name: name, Emailaddress: email, Picture: picture });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
