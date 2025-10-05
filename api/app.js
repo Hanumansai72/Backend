@@ -151,20 +151,31 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
   await wallet.save();
   return wallet;
 }
-app.post("/google-login", async (req, res) => {
-  const { email, name, picture } = req.body;
+app.post("/google-login/customer", async (req, res) => {
+  const { email, name } = req.body;
 
   try {
     let user = await UserMain.findOne({ Emailaddress: email });
+
+    // Create new user if not exists
     if (!user) {
-      user = await UserMain.create({ Full_Name: name, Emailaddress: email, Picture: picture });
+      user = await UserMain.create({
+        Full_Name: name,
+        Emailaddress: email
+      });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || "default_secret",
+      { expiresIn: "1d" }
+    );
 
     res.json({ message: "Success", user, token });
   } catch (err) {
-    res.status(500).json({ message: "Google login failed" });
+    console.error("Google login error:", err);
+    res.status(500).json({ message: "Google login failed", error: err.message });
   }
 });
 // API Route
