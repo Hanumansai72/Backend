@@ -155,6 +155,7 @@ app.post("/google-login/customer", async (req, res) => {
   const { email, name } = req.body;
 
   try {
+    // Check if user exists
     let user = await UserMain.findOne({ Emailaddress: email });
 
     // Create new user if not exists
@@ -165,19 +166,17 @@ app.post("/google-login/customer", async (req, res) => {
       });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET || "default_secret",
-      { expiresIn: "1d" }
-    );
-
-    res.json({ message: "Success", user, token });
+    // Send success response
+    res.json({ message: "Success", user });
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ message: "Google login failed", error: err.message });
+    res.status(500).json({
+      message: "Google login failed",
+      error: err.message
+    });
   }
 });
+
 // API Route
 app.get("/product-wallet/:vendorid", async (req, res) => {
   try {
