@@ -225,6 +225,29 @@ app.get('/api/messages/customer/:customerId', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Get all conversations for a Vendor
+app.get('/api/messages/vendor/:vendorId', async (req, res) => {
+  const { vendorId } = req.params;
+  try {
+    // Messages where vendor sent messages to customers
+    const vendorMsgs = await VendorMessage.find({ senderId: vendorId })
+      .populate('receiverId', 'Full_Name Profile_Image');
+
+    // Messages where vendor received messages from customers
+    const customerMsgs = await CustomerMessage.find({ receiverId: vendorId })
+      .populate('senderId', 'Full_Name Profile_Image');
+
+    const allMsgs = [...vendorMsgs, ...customerMsgs].sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+
+    res.json(allMsgs);
+  } catch (err) {
+    console.error("Error loading vendor messages:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ------------------- Socket.IO Setup -------------------
 
