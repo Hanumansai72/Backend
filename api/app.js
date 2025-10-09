@@ -21,13 +21,11 @@ const hemlet=require("helmet")
 require('dotenv').config();
 const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
-const chats=require("./models/chats")
+const CustomerMessage=require("./models/customerchats")
+const VendorMessage=require("./models/vendorchat")
 const http = require('http');
 const { Server } = require('socket.io');
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' },
-});
+
 
 
 const cors = require('cors');
@@ -158,74 +156,122 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
   await wallet.save();
   return wallet;
 }
-app.post('/api/messages', async (req, res) => {
+app.post('/api/messages/customer/send', async (req, res) => {
   try {
-    const doc = new chats({
+    const msg = new CustomerMessage({
       senderId: req.body.senderId,
-      senderModel: req.body.senderModel,
       receiverId: req.body.receiverId,
-      receiverModel: req.body.receiverModel,
       text: req.body.text,
-      time: new Date().toISOString(),
     });
-    const saved = await doc.save();
+    const saved = await msg.save();
     res.status(200).json(saved);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// REST: thread between two users
-app.get('/api/messages/:senderId/:receiverId', async (req, res) => {
+// Vendor sends message to Customer
+app.post('/api/messages/vendor/send', async (req, res) => {
   try {
-    const { senderId, receiverId } = req.params;
-    const msgs = await chats.find({
-      $or: [
-        { senderId, receiverId },
-        { senderId: receiverId, receiverId: senderId },
-      ],
-    }).sort({ time: 1, createdAt: 1 });
-    res.json(msgs);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    const msg = new VendorMessage({
+      senderId: req.body.senderId,
+      receiverId: req.body.receiverId,
+      text: req.body.text,
+    });
+    const saved = await msg.save();
+    res.status(200).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Optional: all messages (client may reduce to conversations)
-app.get('/api/messages/all', async (_req, res) => {
+// Get conversation between Customer and Vendor
+app.get('/api/messages/conversation/:customerId/:vendorId', async (req, res) => {
+  const { customerId, vendorId } = req.params;
   try {
-    const msgs = await chats.find().sort({ time: 1, createdAt: 1 });
-    res.json(msgs);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    const customerMsgs = await CustomerMessage.find({ senderId: customerId, receiverId: vendorId })
+      .populate('senderId', 'Full_Name')
+      .populate('receiverId', 'Business_Name Profile_Image');
+    
+    const vendorMsgs = await VendorMessage.find({ senderId: vendorId, receiverId: customerId })
+      .populate('senderId', 'Business_Name Profile_Image')
+      .populate('receiverId', 'Full_Name');
+
+    const allMessages = [...customerMsgs, ...vendorMsgs].sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+
+    res.json(allMessages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
-// Socket.IO: rooms and real-time send
+// Get all conversations for a Customer
+app.get('/api/messages/customer/:customerId', async (req, res) => {
+  const { customerId } = req.params;
+  try {
+    const customerMsgs = await CustomerMessage.find({ senderId: customerId })
+      .populate('receiverId', 'Business_Name Profile_Image');
+    const vendorMsgs = await VendorMessage.find({ receiverId: customerId })
+      .populate('senderId', 'Business_Name Profile_Image');
+
+    const allMsgs = [...customerMsgs, ...vendorMsgs].sort(
+      (a, b) => new Date(a.time) - new Date(b.time)
+    );
+
+    res.json(allMsgs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ------------------- Socket.IO Setup -------------------
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' },
+});
+
 io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  // Join room (userId = customerId or vendorId)
   socket.on('joinRoom', (userId) => {
     if (userId) socket.join(userId);
   });
 
+  // Handle sending messages
   socket.on('sendMessage', async (data) => {
     try {
-      const doc = new chats({
-        senderId: data.senderId,
-        senderModel: data.senderModel,
-        receiverId: data.receiverId,
-        receiverModel: data.receiverModel,
-        text: data.text,
-        time: new Date().toISOString(),
-      });
-      const saved = await doc.save();
+      let saved;
+      if (data.senderModel === 'Customer') {
+        const msg = new CustomerMessage({
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          text: data.text,
+        });
+        saved = await msg.save();
+      } else if (data.senderModel === 'Vendor') {
+        const msg = new VendorMessage({
+          senderId: data.senderId,
+          receiverId: data.receiverId,
+          text: data.text,
+        });
+        saved = await msg.save();
+      }
+
+      // Emit to both sender and receiver
       io.to(data.receiverId).emit('receiveMessage', saved);
       io.to(data.senderId).emit('receiveMessage', saved);
     } catch (err) {
-      // log error
+      console.error('Socket message error:', err.message);
     }
   });
 
-  socket.on('disconnect', () => {});
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
 });
 app.post("/google-login/customer", async (req, res) => {
   const { email, name } = req.body;
