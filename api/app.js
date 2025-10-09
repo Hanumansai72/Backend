@@ -230,7 +230,11 @@ app.get('/api/messages/customer/:customerId', async (req, res) => {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' },
+  cors: {
+    origin: "https://www.apnamestri.com", // frontend URL
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
 });
 
 io.on('connection', (socket) => {
