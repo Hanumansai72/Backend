@@ -21,6 +21,13 @@ const hemlet=require("helmet")
 require('dotenv').config();
 const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
+const chats=require("./models/chats")
+const http = require('http');
+const { Server } = require('socket.io');
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' },
+});
 
 
 const cors = require('cors');
@@ -151,6 +158,68 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
   await wallet.save();
   return wallet;
 }
+app.post('/api/messages', async (req, res) => {
+  try {
+    const newMessage = new chats(req.body);
+    const savedMessage = await newMessage.save();
+    res.status(200).json(savedMessage);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/messages/:senderId/:receiverId', async (req, res) => {
+  try {
+    const { senderId, receiverId } = req.params;
+    const messages = await chats.find({
+      $or: [
+        { senderId, receiverId },
+        { senderId: receiverId, receiverId: senderId },
+      ],
+    }).sort({ time: 1 });
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// SOCKET.IO Real-Time Communication
+io.on('connection', (socket) => {
+  console.log('🟢 User connected:', socket.id);
+
+  // Join room (based on vendor or customer ID)
+  socket.on('joinRoom', (userId) => {
+    socket.join(userId);
+    console.log(`User ${userId} joined their private room`);
+  });
+
+  // Send message event
+  socket.on('sendMessage', async (data) => {
+    try {
+      const { senderId, senderModel, receiverId, receiverModel, text } = data;
+
+      // Save to database
+      const newMessage = new chats({
+        senderId,
+        senderModel,
+        receiverId,
+        receiverModel,
+        text,
+      });
+      await newMessage.save();
+
+      // Emit to receiver room
+      io.to(receiverId).emit('receiveMessage', newMessage);
+      io.to(senderId).emit('receiveMessage', newMessage);
+    } catch (error) {
+      console.error('❌ Error sending message:', error.message);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔴 User disconnected:', socket.id);
+  });});
+
 app.post("/google-login/customer", async (req, res) => {
   const { email, name } = req.body;
 
