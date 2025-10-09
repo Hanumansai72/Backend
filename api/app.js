@@ -160,7 +160,7 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
 }
 app.post('/api/messages', async (req, res) => {
   try {
-    const doc = new Chats({
+    const doc = new chats({
       senderId: req.body.senderId,
       senderModel: req.body.senderModel,
       receiverId: req.body.receiverId,
@@ -179,7 +179,7 @@ app.post('/api/messages', async (req, res) => {
 app.get('/api/messages/:senderId/:receiverId', async (req, res) => {
   try {
     const { senderId, receiverId } = req.params;
-    const msgs = await Chats.find({
+    const msgs = await chats.find({
       $or: [
         { senderId, receiverId },
         { senderId: receiverId, receiverId: senderId },
@@ -194,7 +194,7 @@ app.get('/api/messages/:senderId/:receiverId', async (req, res) => {
 // Optional: all messages (client may reduce to conversations)
 app.get('/api/messages/all', async (_req, res) => {
   try {
-    const msgs = await Chats.find().sort({ time: 1, createdAt: 1 });
+    const msgs = await chats.find().sort({ time: 1, createdAt: 1 });
     res.json(msgs);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -209,7 +209,7 @@ io.on('connection', (socket) => {
 
   socket.on('sendMessage', async (data) => {
     try {
-      const doc = new Chats({
+      const doc = new chats({
         senderId: data.senderId,
         senderModel: data.senderModel,
         receiverId: data.receiverId,
@@ -485,7 +485,7 @@ app.post("/login", async (req, res) => {
 
 const client = new OpenAI({
   baseURL: "https://router.huggingface.co/nebius/v1",
-  apiKey: process.env.API_KEY_HUGGEFACE, 
+  apiKey: "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", 
 });
 
 async function generateDescription(category, subCategory) {
