@@ -160,66 +160,73 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
 }
 app.post('/api/messages', async (req, res) => {
   try {
-    const newMessage = new chats(req.body);
-    const savedMessage = await newMessage.save();
-    res.status(200).json(savedMessage);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const doc = new Chats({
+      senderId: req.body.senderId,
+      senderModel: req.body.senderModel,
+      receiverId: req.body.receiverId,
+      receiverModel: req.body.receiverModel,
+      text: req.body.text,
+      time: new Date().toISOString(),
+    });
+    const saved = await doc.save();
+    res.status(200).json(saved);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
+// REST: thread between two users
 app.get('/api/messages/:senderId/:receiverId', async (req, res) => {
   try {
     const { senderId, receiverId } = req.params;
-    const messages = await chats.find({
+    const msgs = await Chats.find({
       $or: [
         { senderId, receiverId },
         { senderId: receiverId, receiverId: senderId },
       ],
-    }).sort({ time: 1 });
-    res.json(messages);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    }).sort({ time: 1, createdAt: 1 });
+    res.json(msgs);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 
-// SOCKET.IO Real-Time Communication
-io.on('connection', (socket) => {
-  console.log('🟢 User connected:', socket.id);
+// Optional: all messages (client may reduce to conversations)
+app.get('/api/messages/all', async (_req, res) => {
+  try {
+    const msgs = await Chats.find().sort({ time: 1, createdAt: 1 });
+    res.json(msgs);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
-  // Join room (based on vendor or customer ID)
+// Socket.IO: rooms and real-time send
+io.on('connection', (socket) => {
   socket.on('joinRoom', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined their private room`);
+    if (userId) socket.join(userId);
   });
 
-  // Send message event
   socket.on('sendMessage', async (data) => {
     try {
-      const { senderId, senderModel, receiverId, receiverModel, text } = data;
-
-      // Save to database
-      const newMessage = new chats({
-        senderId,
-        senderModel,
-        receiverId,
-        receiverModel,
-        text,
+      const doc = new Chats({
+        senderId: data.senderId,
+        senderModel: data.senderModel,
+        receiverId: data.receiverId,
+        receiverModel: data.receiverModel,
+        text: data.text,
+        time: new Date().toISOString(),
       });
-      await newMessage.save();
-
-      // Emit to receiver room
-      io.to(receiverId).emit('receiveMessage', newMessage);
-      io.to(senderId).emit('receiveMessage', newMessage);
-    } catch (error) {
-      console.error('❌ Error sending message:', error.message);
+      const saved = await doc.save();
+      io.to(data.receiverId).emit('receiveMessage', saved);
+      io.to(data.senderId).emit('receiveMessage', saved);
+    } catch (err) {
+      // log error
     }
   });
 
-  socket.on('disconnect', () => {
-    console.log('🔴 User disconnected:', socket.id);
-  });});
-
+  socket.on('disconnect', () => {});
+});
 app.post("/google-login/customer", async (req, res) => {
   const { email, name } = req.body;
 
