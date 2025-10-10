@@ -6,24 +6,26 @@ const Vendor = require('./admin');
 const messageSchema = new mongoose.Schema({
   senderId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref:Customer, // Dynamic ref: can be Vendor or Customer
     required: true,
+    refPath: "senderModel", // dynamic reference
   },
-  
   receiverId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: Vendor,
     required: true,
+    refPath: "receiverModel",
   },
-  
-  text: {
+  senderModel: {
     type: String,
     required: true,
+    enum: ["userdata", "Vendor"],
   },
-  time: {
-    type: Date,
-    default: Date.now,
+  receiverModel: {
+    type: String,
+    required: true,
+    enum: ["userdata", "Vendor"],
   },
+  text: { type: String, required: true },
+  time: { type: Date, default: Date.now },
 });
 
 // Export model
