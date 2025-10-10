@@ -179,15 +179,17 @@ app.post("/api/messages/vendor/send", async (req, res) => {
       senderId: req.body.senderId,
       senderModel: "Vendor",
       receiverId: req.body.receiverId,
-      receiverModel: "userdata",
+      receiverModel: "Customer",
       text: req.body.text,
     });
+
     const saved = await msg.save();
     res.status(200).json(saved);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ✅ Get conversation between Customer and Vendor
 app.get("/api/messages/conversation/:customerId/:vendorId", async (req, res) => {
@@ -263,23 +265,24 @@ io.on("connection", (socket) => {
 
   // Handle message sending
   socket.on("sendMessage", async (data) => {
-    try {
-      const msg = new Message({
-        senderId: data.senderId,
-        senderModel: data.senderModel === "Customer" ? "userdata" : "Vendor",
-        receiverId: data.receiverId,
-        receiverModel: data.receiverModel === "Customer" ? "userdata" : "Vendor",
-        text: data.text,
-      });
-      const saved = await msg.save();
+  try {
+    const msg = new Message({
+      senderId: data.senderId,
+      senderModel: data.senderModel,      // Keep "Vendor" or "Customer"
+      receiverId: data.receiverId,
+      receiverModel: data.receiverModel,  // Keep "Vendor" or "Customer"
+      text: data.text,
+    });
 
-      // Emit message to both sender and receiver
-      io.to(data.receiverId).emit("receiveMessage", saved);
-      io.to(data.senderId).emit("receiveMessage", saved);
-    } catch (err) {
-      console.error("Socket message error:", err.message);
-    }
-  });
+    const saved = await msg.save();
+
+    // Emit to sender and receiver if they joined their rooms
+    io.to(data.receiverId).emit("receiveMessage", saved);
+    io.to(data.senderId).emit("receiveMessage", saved);
+  } catch (err) {
+    console.error("Socket message error:", err.message);
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
