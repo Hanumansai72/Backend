@@ -190,6 +190,39 @@ app.post("/api/messages/vendor/send", async (req, res) => {
   }
 });
 
+// ✅ Get Vendor Details by ID
+app.get("/api/getdetails/vendor/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "Vendor ID is required" });
+    }
+
+    const vendor = await Vendor.findById(id);
+
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // ✅ Check for empty fields
+    const emptyFields = Object.keys(vendor._doc).filter(
+      key =>
+        vendor[key] === "" ||
+        vendor[key] === null ||
+        (Array.isArray(vendor[key]) && vendor[key].length === 0)
+    );
+
+    res.status(200).json({
+      vendor,
+      emptyFields,
+    });
+  } catch (err) {
+    console.error("Error fetching vendor details:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 
 // ✅ Get conversation between Customer and Vendor
 app.get("/api/messages/conversation/:customerId/:vendorId", async (req, res) => {
@@ -670,6 +703,31 @@ app.get("/cart/:id/count",async (req,res)=>{
 
   }
 })
+app.put("/api/cancel/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Update the order status to "Cancelled"
+    const updateCancel = await vieworder.findByIdAndUpdate(
+      id,
+      { orderStatus: "Cancelled" },
+      { new: true } // returns the updated document
+    );
+
+    if (!updateCancel) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    res.status(200).json({
+      message: "Order status updated to Cancelled",
+      order: updateCancel,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
 app.put("/update-order-status/:id", async (req, res) => {
   try {
     const { id } = req.params;
