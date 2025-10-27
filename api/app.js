@@ -1717,70 +1717,22 @@ app.delete("/delete/:id", async (req, res) => {
 
 
 app.get('/fetch/services', async (req, res) => {
-  const { category, lat, lng } = req.query;
+  const { category } = req.query;
 
   if (!category) {
     return res.status(400).json({ message: "Missing category parameter" });
   }
 
   try {
-    let services = [];
-    let cityName = "";
-
-    // 🔹 STEP 1: Detect city from coordinates
-    if (lat && lng) {
-      try {
-        const response = await axios.get(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-        );
-
-        cityName =
-          response.data.address.city ||
-          response.data.address.town ||
-          response.data.address.village ||
-          response.data.address.state ||
-          "";
-        console.log("Detected City:", cityName);
-      } catch (geoErr) {
-        console.error("Reverse Geocoding failed:", geoErr.message);
-      }
-    }
-
-    // 🔹 STEP 2: Find vendors by detected city or fallback to Hyderabad
-    if (cityName) {
-      services = await Vendor.find({
-        $and: [
-          { Sub_Category: { $in: [new RegExp(category.trim(), "i")] } },
-          {
-            $or: [
-              { City: { $regex: new RegExp(cityName, "i") } },
-              { Address: { $regex: new RegExp(cityName, "i") } }
-            ]
-          }
-        ]
-      });
-    }
-
-    // 🔹 STEP 3: If no city or no results found, fallback to category only
-    if (!services.length) {
-      const fallbackCity = cityName || "Hyderabad";
-      services = await Vendor.find({
-        $and: [
-          { Sub_Category: { $in: [new RegExp(category.trim(), "i")] } },
-          {
-            $or: [
-              { City: { $regex: new RegExp(fallbackCity, "i") } },
-              { Address: { $regex: new RegExp(fallbackCity, "i") } }
-            ]
-          }
-        ]
-      }).limit(20);
-    }
+    // 🔹 Find all vendors matching the category (case-insensitive)
+    const services = await Vendor.find({
+      Sub_Category: { $in: [new RegExp(category.trim(), "i")] }
+    });
 
     res.json({
       services,
-      description: `Find skilled ${category} professionals near ${cityName || "your area"}.`,
-      tags: [category, "services", cityName || "local"]
+      description: `Find skilled ${category} professionals across India.`,
+      tags: [category, "services", "all"]
     });
 
   } catch (err) {
@@ -1788,6 +1740,7 @@ app.get('/fetch/services', async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+
 
 // GET /api/vendor/:vendorId/price
 app.get("/api/vendor/:vendorId/price", async (req, res) => {
