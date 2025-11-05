@@ -1956,7 +1956,7 @@ app.get("/orderdetails/:id",async (req,res)=>{
 
   }
 })
-app.get("/api/newjob/:id", async (req, res) => {
+app.get("/newjob/:id", async (req, res) => {
   const id = req.params.id;
   try {
     // ✅ Find all bookings for this vendor, excluding completed ones
@@ -1965,8 +1965,7 @@ app.get("/api/newjob/:id", async (req, res) => {
         Vendorid: id,
         status: { $ne: "Completed" },
       })
-      .populate("Vendorid")
-      .populate("customerid");
+      
 
     res.json(findingnewjob);
   } catch (err) {
