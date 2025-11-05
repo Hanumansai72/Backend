@@ -1956,24 +1956,7 @@ app.get("/orderdetails/:id",async (req,res)=>{
 
   }
 })
-app.get("/newjob/:id", async (req, res) => {
-  const id = req.params.id;
 
-  try {
-    // ✅ Convert vendorId string to ObjectId
-
-    const findingnewjob = await booking_service.find({
-        Vendorid: id,
-        
-      })
-
-    console.log("✅ Jobs found:", findingnewjob.length);
-    res.status(200).json(findingnewjob);
-  } catch (err) {
-    console.error("❌ Error fetching jobs:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 // In your booking controller or route file
 app.put('/api/bookings/:id/status', async (req, res) => {
@@ -2000,6 +1983,17 @@ app.get("/jobhistry/:id",async(req,res)=>{
     }
 
 
+})
+app.get("/api/newjob/:id",async(req,res)=>{
+  const id=req.params.id
+  try{
+    const findingnewjob=await booking_service.find({Vendorid:id,      status: { $ne: "Completed" } // Exclude bookings with status "Completed"
+})
+    res.json(findingnewjob)
+  }
+  catch(err){
+    res.json(err)
+  }
 })
 app.get("/count/service/:id",async(req,res)=>{
   const id=req.params.id;
