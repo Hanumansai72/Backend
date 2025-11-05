@@ -1961,16 +1961,11 @@ app.get("/newjob/:id", async (req, res) => {
 
   try {
     // ✅ Convert vendorId string to ObjectId
-    const objectId = new mongoose.Types.ObjectId(id);
 
-    const findingnewjob = await booking_service
-      .find({
-        Vendorid: objectId,
-        status: { $ne: "Completed" },
+    const findingnewjob = await booking_service.find({
+        Vendorid: id,
+        
       })
-      .populate("Vendorid")
-      .populate("customerid")
-      .sort({ createdAt: -1 });
 
     console.log("✅ Jobs found:", findingnewjob.length);
     res.status(200).json(findingnewjob);
