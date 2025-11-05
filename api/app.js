@@ -2082,26 +2082,7 @@ app.get("/upcomingworks/:id", async (req, res) => {
   }
 });
 
-//
-app.get("/api/newjob/:id", async (req, res) => {
-  res.set({
-    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
-  });
 
-  const id = req.params.id;
-  try {
-    const findingnewjob = await booking_service
-      .find({ Vendorid: id, status: { $ne: "Completed" } })
-    
-
-    res.status(200).json(findingnewjob);
-  } catch (err) {
-    console.error("❌ Error fetching jobs:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
