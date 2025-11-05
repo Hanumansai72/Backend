@@ -2036,36 +2036,43 @@ app.get("/upcomingworks/:id", async (req, res) => {
   try {
     const today = new Date();
 
-    // Fetch all upcoming works for this vendor
-    const dates = await booking_service.find(
+    // Fetch all upcoming works for this vendor with both date & time
+    const works = await booking_service.find(
       {
         Vendorid: id,
         serviceDate: { $gte: today },
       },
-      "serviceDate" // Select only serviceDate
+      "serviceDate serviceTime" // ✅ Select both fields
     );
 
-    if (!dates || dates.length === 0) {
-      return res.json({ show_dates: [] });
+    if (!works || works.length === 0) {
+      return res.json({ show_works: [] });
     }
 
-    // Format the dates nicely (e.g. "10 Nov 2025")
-    const show_dates = dates.map(job => {
-      const date = new Date(job.serviceDate);
-      return date.toLocaleDateString("en-GB", {
+    // ✅ Format each job's date & time clearly
+    const show_works = works.map(job => {
+      const dateObj = new Date(job.serviceDate);
+      const formattedDate = dateObj.toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
       });
+
+      // Combine both nicely
+      return {
+        date: formattedDate,
+        time: job.serviceTime || "N/A",
+      };
     });
 
-    res.json({ show_dates });
+    res.json({ show_works });
   } catch (err) {
     console.error("❌ Error fetching upcoming works:", err);
-    res.status(500).json({ error: "Server error while fetching upcoming works" });
+    res
+      .status(500)
+      .json({ error: "Server error while fetching upcoming works" });
   }
 });
-
 
 
 app.get("/upcomingjobs/:id", async (req, res) => {
