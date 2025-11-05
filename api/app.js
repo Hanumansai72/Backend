@@ -1956,17 +1956,25 @@ app.get("/orderdetails/:id",async (req,res)=>{
 
   }
 })
-app.get("/api/newjob/:id",async(req,res)=>{
-  const id=req.params.id
-  try{
-    const findingnewjob=await booking_service.find({Vendorid:id,      status: { $ne: "Completed" } // Exclude bookings with status "Completed"
-})
-    res.json(findingnewjob)
+app.get("/api/newjob/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    // ✅ Find all bookings for this vendor, excluding completed ones
+    const findingnewjob = await booking_service
+      .find({
+        Vendorid: id,
+        status: { $ne: "Completed" },
+      })
+      .populate("Vendorid")
+      .populate("customerid");
+
+    res.json(findingnewjob);
+  } catch (err) {
+    console.error("❌ Error fetching jobs:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-  catch(err){
-    res.json(err)
-  }
-})
+});
+
 // In your booking controller or route file
 app.put('/api/bookings/:id/status', async (req, res) => {
   const { status } = req.body;
