@@ -2083,32 +2083,27 @@ app.get("/upcomingworks/:id", async (req, res) => {
 });
 
 
-app.get("/upcomingjobs/:id", async (req, res) => {
+app.get("/api/newjob/:id", async (req, res) => {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  });
+
+  const id = req.params.id;
   try {
-    const vendorId = req.params.id;
+    const findingnewjob = await booking_service
+      .find({ Vendorid: id, status: { $ne: "Completed" } })
+      .populate("Vendorid")
+      .populate("customerid");
 
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const threeDaysLater = new Date();
-threeDaysLater.setDate(today.getDate() + 3);
-const endOfDay = new Date(threeDaysLater.setHours(23, 59, 59, 999));
-
-    const upcomingJobs = await booking_service.find({
-      Vendorid: vendorId,
-      serviceDate: {
-        $gte: startOfDay,
-        $lte: endOfDay
-      }
-    })
-    .populate('Vendorid')
-    .populate('customerid')
-    .sort({ serviceTime: 1 }); 
-    res.status(200).json(upcomingJobs);
+    res.status(200).json(findingnewjob);
   } catch (err) {
-    console.error("Error fetching today's jobs:", err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("❌ Error fetching jobs:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
+
 app.listen(8031, () => {
   console.log("Server started on http://localhost:8031");
 });
