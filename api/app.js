@@ -1998,10 +1998,13 @@ app.get("/count/service/:id",async(req,res)=>{
   try{
     const count1=await booking_service.countDocuments({Vendorid:id,status:"Pending"})
         const count2=await booking_service.countDocuments({Vendorid:id,status:"Completed"})
+const wallet = await Wallet.findOne({ vendorId: id });
+
+    const count3 = wallet ? wallet.balance : 0;
         
 
 
-    res.json({count1:count1,count2:count2})
+    res.json({count1:count1,count2:count2,count3:count3})
   }
   catch(err){
     console.log(err)
@@ -2027,6 +2030,42 @@ app.get("/cart/service/:id",async(req,res)=>{
     console.log(err)
   }
 })
+app.get("/upcomingworks/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const today = new Date();
+
+    // Fetch all upcoming works for this vendor
+    const dates = await booking_service.find(
+      {
+        Vendorid: id,
+        serviceDate: { $gte: today },
+      },
+      "serviceDate" // Select only serviceDate
+    );
+
+    if (!dates || dates.length === 0) {
+      return res.json({ show_dates: [] });
+    }
+
+    // Format the dates nicely (e.g. "10 Nov 2025")
+    const show_dates = dates.map(job => {
+      const date = new Date(job.serviceDate);
+      return date.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    });
+
+    res.json({ show_dates });
+  } catch (err) {
+    console.error("❌ Error fetching upcoming works:", err);
+    res.status(500).json({ error: "Server error while fetching upcoming works" });
+  }
+});
+
 
 
 app.get("/upcomingjobs/:id", async (req, res) => {
