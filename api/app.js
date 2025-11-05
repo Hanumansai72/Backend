@@ -2094,8 +2094,7 @@ app.get("/api/newjob/:id", async (req, res) => {
   try {
     const findingnewjob = await booking_service
       .find({ Vendorid: id, status: { $ne: "Completed" } })
-      .populate("Vendorid")
-      .populate("customerid");
+    
 
     res.status(200).json(findingnewjob);
   } catch (err) {
