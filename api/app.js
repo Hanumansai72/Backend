@@ -1958,16 +1958,22 @@ app.get("/orderdetails/:id",async (req,res)=>{
 })
 app.get("/newjob/:id", async (req, res) => {
   const id = req.params.id;
+
   try {
-    // ✅ Find all bookings for this vendor, excluding completed ones
+    // ✅ Convert vendorId string to ObjectId
+    const objectId = new mongoose.Types.ObjectId(id);
+
     const findingnewjob = await booking_service
       .find({
-        Vendorid: id,
+        Vendorid: objectId,
         status: { $ne: "Completed" },
       })
-      
+      .populate("Vendorid")
+      .populate("customerid")
+      .sort({ createdAt: -1 });
 
-    res.json(findingnewjob);
+    console.log("✅ Jobs found:", findingnewjob.length);
+    res.status(200).json(findingnewjob);
   } catch (err) {
     console.error("❌ Error fetching jobs:", err);
     res.status(500).json({ error: "Internal server error" });
