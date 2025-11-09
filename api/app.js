@@ -1236,7 +1236,32 @@ app.post("/postusername", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.get("/api/getproductcount/:id",async(req,res)=>{
+  const id=req.params.id;
+  try{
+    const products_id= await productdata.countDocuments({Vendor:id});
+    const product_wallet = await productwallet.findOne({ vendorid: id });
+    const product_total_order=await vieworder.countDocuments({vendorid:id});
 
+
+    // ✅ Get wallet balance (handle if wallet not found)
+    const balance = product_wallet ? product_wallet.balance : 0;
+    res.status(200).json({
+      success: true,
+      vendorId: id,
+      count:products_id ,
+      balance:balance,
+      total_order:product_total_order
+    });
+  } catch (error) {
+    console.error("Error fetching product count:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while counting products",
+      error: error.message,
+    });
+  }
+});
 
 app.get("/vendor/count", async (req, res) => {
   try {
@@ -1646,6 +1671,22 @@ app.get("/viewproduct/:vendorId", async (req, res) => {
     console.error("Error fetching products by vendor ID:", error);
     res.status(500).json({ error: "Server error" });
   }
+  
+});
+app.get("/viewproduct/:id", async (req, res) => {
+  const vendorId = req.params.vendorId;
+
+  if (!vendorId || vendorId === "null") {
+    return res.status(400).json({ error: "Invalid vendor ID" });
+  }
+
+  try {
+    const products = await productdata.find({ Vendor: vendorId });
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching products by vendor ID:", error);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 app.get("/api/categories/:id", async (req, res) => {
   try {
@@ -1984,6 +2025,64 @@ app.get("/jobhistry/:id",async(req,res)=>{
 
 
 })
+// Get vendor performance analytics
+app.get("/vendor/:id/analytics", async (req, res) => {
+  const vendorId = req.params.id;
+
+  try {
+    const allJobs = await booking_service.find({ Vendorid: vendorId });
+    const total = allJobs.length;
+    const accepted = allJobs.filter(j => j.status !== "Pending").length;
+    const completed = allJobs.filter(j => j.status === "Completed").length;
+
+    // Acceptance & completion rate
+    const acceptanceRate = total ? (accepted / total) * 100 : 0;
+    const completionRate = accepted ? (completed / accepted) * 100 : 0;
+
+    // Average response time
+    const responseTimes = allJobs
+      .filter(j => j.acceptedAt && j.createdAt)
+      .map(j => new Date(j.acceptedAt) - new Date(j.createdAt));
+    const avgResponseTime = responseTimes.length
+      ? Math.round(responseTimes.reduce((a, b) => a + b) / responseTimes.length / 1000 / 60)
+      : 0; 
+
+    // Average rating
+    const ratings = allJobs.filter(j => j.rating).map(j => j.rating);
+    const avgRating = ratings.length
+      ? (ratings.reduce((a, b) => a + b) / ratings.length).toFixed(1)
+      : 0;
+
+    // Earnings growth
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+    const thisMonthEarnings = allJobs
+      .filter(j => new Date(j.createdAt).getMonth() === thisMonth)
+      .reduce((a, j) => a + (j.totalAmount || 0), 0);
+    const lastMonthEarnings = allJobs
+      .filter(j => new Date(j.createdAt).getMonth() === lastMonth)
+      .reduce((a, j) => a + (j.totalAmount || 0), 0);
+
+    const earningsGrowth =
+      lastMonthEarnings === 0
+        ? 100
+        : ((thisMonthEarnings - lastMonthEarnings) / lastMonthEarnings) * 100;
+
+    res.json({
+      acceptanceRate,
+      completionRate,
+      avgResponseTime,
+      avgRating,
+      earningsGrowth,
+      totalJobs: total,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Error calculating analytics" });
+  }
+});
+
 app.get("/api/newjob/:id",async(req,res)=>{
   const id=req.params.id
   try{
@@ -2060,7 +2159,6 @@ app.get("/upcomingworks/:id", async (req, res) => {
         year: "numeric",
       });
 
-      // Combine both nicely
       return {
         date: formattedDate,
         time: job.serviceTime || "N/A",
