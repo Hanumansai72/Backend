@@ -20,7 +20,12 @@ const productSchema = new mongoose.Schema({
     default: 0
   },
   discountedprice:String,
-  
+  productview:{
+    type:Number,
+    default:0
+  },
+    uniqueViews: { type: [String], default: [] }, // stores IP addresses or session IDs
+
   ProductCategory: String,
   ProductSubCategory: String,
   ProductTags:String,

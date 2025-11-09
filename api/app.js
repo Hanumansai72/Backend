@@ -1754,6 +1754,70 @@ app.delete("/delete/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+app.get("/api/vendor/:vendorId/totalviews", async (req, res) => {
+  const { vendorId } = req.params;
+
+  try {
+    const products = await productdata.find({ Vendor: vendorId });
+    const totalViews = products.reduce((sum, p) => sum + (p.productview || 0), 0);
+
+    res.status(200).json({
+      success: true,
+      vendorId,
+      totalViews
+    });
+  } catch (err) {
+    console.error("Error calculating total views:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error while calculating total views",
+    });
+  }
+});
+
+app.post("/updateview/:id", async (req, res) => {
+  const id = req.params.id;
+  const ip_address = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+  try {
+    // ✅ Find product
+    const product = await productdata.findById(id);
+
+    // ✅ If product not found, stop here
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // ✅ Initialize the uniqueViews array if missing
+    if (!product.uniqueViews) {
+      product.uniqueViews = [];
+    }
+
+    // ✅ Add view only if this IP hasn’t been counted
+    if (!product.uniqueViews.includes(ip_address)) {
+      product.uniqueViews.push(ip_address);
+      product.productview = (product.productview || 0) + 1; // prevent NaN if undefined
+      await product.save();
+    }
+
+    // ✅ Send the correct field back
+    res.status(200).json({
+      success: true,
+      message: "Unique view recorded",
+      views: product.productview,
+    });
+
+  } catch (err) {
+    console.error("Error tracking view:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
 
 
 
