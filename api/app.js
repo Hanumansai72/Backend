@@ -1383,7 +1383,7 @@ app.post("/review/:vid", async (req, res) => {
 });
 
 
-app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
+app.post("/addproduct", async (req, res) => {
   try {
     const {
       Vendor,
@@ -1395,12 +1395,37 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      discountedprice
+      discountedprice,
+      ProductUrl,
+      ProductModelNumber,
+      Weight,
+      UnitofMeasurement,
+      MinimumOrderQuantity,
+      isAvailable
     } = req.body;
 
-    // Assuming you've already uploaded to Cloudinary and received secure URLs in req.body.ProductUrls (array)
-    const ProductUrls = req.body.ProductUrl;
+    // ✅ Validate required fields
+    if (
+      !Vendor ||
+      !ProductName ||
+      !ProductPrice ||
+      !ProductStock ||
+      !ProductDescription ||
+      !ProductCategory ||
+      !ProductSubCategory ||
+      !ProductLocation
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
+    // ✅ Ensure ProductUrl is an array
+    const ProductUrls = Array.isArray(ProductUrl)
+      ? ProductUrl
+      : typeof ProductUrl === "string"
+      ? [ProductUrl]
+      : [];
+
+    // ✅ Create and save product
     const newProduct = new productdata({
       Vendor,
       ProductName,
@@ -1411,16 +1436,28 @@ app.post("/addproduct", upload.array("productImages", 5), async (req, res) => {
       ProductCategory,
       ProductSubCategory,
       ProductLocation,
-      ProductUrl: ProductUrls, 
-      discountedprice
+      discountedprice,
+      ProductUrl: ProductUrls,
+      ProductModelNumber,
+      Weight,
+      UnitofMeasurement,
+      MinimumOrderQuantity,
+      isAvailable: isAvailable ?? true,
     });
 
     const savedProduct = await newProduct.save();
-    res.status(201).json({ message: "Product uploaded successfully", product: savedProduct });
-
+    res.status(201).json({
+      success: true,
+      message: "Product uploaded successfully",
+      product: savedProduct,
+    });
   } catch (err) {
     console.error("Product upload error:", err);
-    res.status(500).json({ message: "Server error", error: err.message });
+    res.status(500).json({
+      success: false,
+      message: "Server error while adding product",
+      error: err.message,
+    });
   }
 });
 

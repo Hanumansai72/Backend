@@ -11,14 +11,19 @@ const productSchema = new mongoose.Schema({
   ProductPrice: String,
   ProductStock: String,
   ProductDescription: String,
+  ProductModelNumber:String,
   ProductReview: {
     type: Number,
     default: 0
   },
+  Weight:String,
   ProductOrderPlaces: {
     type: Number,
     default: 0
   },
+  UnitofMeasurement:String,
+  MinimumOrderQuantity:String,
+
   discountedprice:String,
   productview:{
     type:Number,
