@@ -124,11 +124,11 @@ function sendOTP(email, otp) {
   return transporter.sendMail(mailOptions);
 }
 async function addProductTransaction(vendorid, orderId, totalAmount) {
-  let wallet = await productwallet.findOne({ vendorid });
+  let wallet = await Wallet.findOne({ vendorId:vendorid });
 
   // If wallet doesn't exist, create it
   if (!wallet) {
-    wallet = new productwallet({
+    wallet = new Wallet({
       vendorid,
       balance: 0,
       commissionDue: 0,
