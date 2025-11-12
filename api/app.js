@@ -1760,11 +1760,35 @@ app.get("/api/vendor/:vendorId/totalviews", async (req, res) => {
   try {
     const products = await productdata.find({ Vendor: vendorId });
     const totalViews = products.reduce((sum, p) => sum + (p.productview || 0), 0);
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59);
+    const totalOrders = await vieworder.countDocuments({
+      vendorid: vendorId,
+      createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+    });
+    const result = await vieworder.aggregate([
+      {
+        $match: {
+          vendorid: new mongoose.Types.ObjectId(vendorId),
+          orderedAt: { $gte: startOfMonth, $lte: endOfMonth },
+          paymentStatus: "Paid" // ✅ Only count paid orders
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$totalPrice" }
+        }
+      }
+    ]);
 
+    const totalRevenue = result.length > 0 ? result[0].totalRevenue : 0;
     res.status(200).json({
       success: true,
       vendorId,
-      totalViews
+      totalViews,
+      totalOrders:totalOrders,
+      totalRevenue:totalRevenue
     });
   } catch (err) {
     console.error("Error calculating total views:", err);
