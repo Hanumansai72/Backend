@@ -354,7 +354,7 @@ app.get("/product-wallet/:vendorid", async (req, res) => {
     const { vendorid } = req.params;
 
     // 1. Find or create wallet
-    let wallet = await Wallet.findOne({ vendorid });
+    let wallet = await Wallet.findOne({ vendorId:vendorid });
     if (!wallet) {
       wallet = new productwallet({
         vendorid,
