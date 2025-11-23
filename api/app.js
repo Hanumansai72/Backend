@@ -2120,7 +2120,7 @@ app.get("/datedeatils/:id",async (req,res)=>{
     res.status(500).json(err)
   }
 })
-router.post("/recent-products", async (req, res) => {
+app.post("/recent-products", async (req, res) => {
   try {
     const products = await productdata.find({ _id: { $in: req.body.ids } });
     res.json(products);
