@@ -2110,16 +2110,20 @@ app.post('/ordercart', async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-app.get("/datedeatils/:id",async (req,res)=>{
-  const id=req.params.id
-  try{
-    const datedetauls=await booking_service.find({Vendorid:id},{serviceDate ,serviceTime});
-    res.status(200).json(datedetauls)
+app.get("/datedeatils/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const datedetauls = await booking_service.find(
+      { Vendorid: id },
+      { serviceDate: 1, serviceTime: 1 }
+    );
+    res.status(200).json(datedetauls);
+  } catch (err) {
+    res.status(500).json(err);
   }
-  catch(err){
-    res.status(500).json(err)
-  }
-})
+});
+
 app.post("/recent-products", async (req, res) => {
   try {
     const products = await productdata.find({ _id: { $in: req.body.ids } });
