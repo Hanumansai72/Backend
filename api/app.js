@@ -40,17 +40,17 @@ cloudinary.config({
 
 
 
-const limiter=ratelimter(
-  {
-    windowMs:15*60*1000,
-    max:100,
-    message:"Too many request Please try again"
-  }
-)
-app.use(limiter);
 
-app.use(cors()); 
-app.use(hemlet());
+app.use(cors());
+app.use(hemlet());   // helmet()
+
+const limiter = ratelimter({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many request Please try again"
+});
+
+app.use(limiter);
 
 
 
