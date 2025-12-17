@@ -1,6 +1,9 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const projectupload=require("./models/projectuplad")
+const Conversation = require("./models/Converstion");
+const Messages =require("./models/Message")
+
 
 const productdata = require("./models/vendorproudctdetails");
 const vieworder=require("./models/productorders")
@@ -21,10 +24,12 @@ const hemlet=require("helmet")
 require('dotenv').config();
 const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
-const Message=require("./models/customerchats")
-const VendorMessage=require("./models/vendorchat")
+const Message=require("./models/Converstion")
+const VendorMessage=require("./models/Message")
 const http = require('http');
 const { Server } = require('socket.io');
+const { createClient } = require("redis")
+
 
 
 
@@ -53,8 +58,13 @@ const limiter = ratelimter({
 app.use(limiter);
 
 
-
-
+const redisclient=createClient({
+  url:"redis://127.0.0.1:6379"
+})
+redisclient.on("error",(err)=>{
+  console.log(err)
+})
+redisclient.connect()
 app.use(express.json());
 
 const UserMain=require("./models/main_userprofile")
@@ -156,39 +166,7 @@ async function addProductTransaction(vendorid, orderId, totalAmount) {
   await wallet.save();
   return wallet;
 }
-app.post("/api/messages/customer/send", async (req, res) => {
-  try {
-    const msg = new Message({
-      senderId: req.body.senderId,
-      senderModel: "userdata",
-      receiverId: req.body.receiverId,
-      receiverModel: "Vendor",
-      text: req.body.text,
-    });
-    const saved = await msg.save();
-    res.status(200).json(saved);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
-// ✅ Vendor sends message to Customer
-app.post("/api/messages/vendor/send", async (req, res) => {
-  try {
-    const msg = new Message({
-      senderId: req.body.senderId,
-      senderModel: "Vendor",
-      receiverId: req.body.receiverId,
-      receiverModel: "Customer",
-      text: req.body.text,
-    });
-
-    const saved = await msg.save();
-    res.status(200).json(saved);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ✅ Get Vendor Details by ID
 app.get("/api/getdetails/vendor/:id", async (req, res) => {
@@ -222,105 +200,105 @@ app.get("/api/getdetails/vendor/:id", async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+app.post('/api/chat/message', async (req, res) => {
+  try {
+    const { conversationId, senderId, senderType, message } = req.body;
 
+    if (!conversationId || !senderId || !senderType || !message) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (!["user", "vendor"].includes(senderType)) {
+      return res.status(400).json({ message: "Invalid senderType" });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    // 🔒 Sender validation (VERY IMPORTANT)
+    if (
+      (senderType === "user" && conversation.userId.toString() !== senderId) ||
+      (senderType === "vendor" && conversation.vendorId.toString() !== senderId)
+    ) {
+      return res.status(403).json({ message: "Sender not allowed in this conversation" });
+    }
+
+    const msg = await Messages.create({
+      conversationId,
+      senderId,
+      senderType,
+      message
+    });
+
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: message,
+      lastMessageAt: new Date()
+    });
+
+    return res.status(201).json(msg);
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Failed to send message" });
+  }
+});
 
 // ✅ Get conversation between Customer and Vendor
-app.get("/api/messages/conversation/:customerId/:vendorId", async (req, res) => {
-  const { customerId, vendorId } = req.params;
+app.post('/api/chat/conversation', async (req, res) => {
   try {
-    const messages = await Message.find({
-      $or: [
-        { senderId: customerId, receiverId: vendorId },
-        { senderId: vendorId, receiverId: customerId },
-      ],
-    })
-      .populate("senderId", "Full_Name Business_Name Profile_Image")
-      .populate("receiverId", "Full_Name Business_Name Profile_Image")
-      .sort({ time: 1 });
+    const { userId, vendorId } = req.body;
 
-    res.json(messages);
+    if (!userId || !vendorId) {
+      return res.status(400).json({ message: "userId and vendorId are required" });
+    }
+
+    let convo = await Conversation.findOne({ userId, vendorId });
+
+    if (!convo) {
+      convo = await Conversation.create({ userId, vendorId });
+    }
+
+    return res.status(200).json(convo);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    return res.status(500).json({ message: "Failed to create conversation" });
   }
 });
+app.get("/messages/:id", async (req, res) => {
+  const messages = await Message.find({
+    conversationId: req.params.id
+  }).sort({ createdAt: 1 });
 
-// ✅ Get all conversations for a Customer
-app.get("/api/messages/customer/:customerId", async (req, res) => {
-  const { customerId } = req.params;
-  try {
-    const messages = await Message.find({
-      $or: [{ senderId: customerId }, { receiverId: customerId }],
-    })
-      .populate("senderId", "Full_Name Business_Name Profile_Image")
-      .populate("receiverId", "Full_Name Business_Name Profile_Image")
-      .sort({ time: 1 });
-
-    res.json(messages);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json(messages);
 });
 
-// ✅ Get all conversations for a Vendor
-app.get("/api/messages/vendor/:vendorId", async (req, res) => {
-  const { vendorId } = req.params;
-  try {
-    const messages = await Message.find({
-      $or: [{ senderId: vendorId }, { receiverId: vendorId }],
-    })
-      .populate("senderId", "Full_Name Business_Name Profile_Image")
-      .populate("receiverId", "Full_Name Business_Name Profile_Image")
-      .sort({ time: 1 });
 
-    res.json(messages);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ------------------- Socket.IO Setup -------------------
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "https://www.apnamestri.com", // frontend URL
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
+const io = require("socket.io")(server, {
+  cors: { origin: "*" }
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  // Join user room
-  socket.on("joinRoom", (userId) => {
-    if (userId) socket.join(userId);
+  socket.on("joinConversation", (conversationId) => {
+    socket.join(conversationId);
   });
 
-  // Handle message sending
   socket.on("sendMessage", async (data) => {
-  try {
-    const msg = new Message({
-      senderId: data.senderId,
-      senderModel: data.senderModel,      // Keep "Vendor" or "Customer"
-      receiverId: data.receiverId,
-      receiverModel: data.receiverModel,  // Keep "Vendor" or "Customer"
-      text: data.text,
+    const msg = await Message.create(data);
+
+    await Conversation.findByIdAndUpdate(data.conversationId, {
+      lastMessage: data.message,
+      lastMessageAt: new Date()
     });
 
-    const saved = await msg.save();
-
-    // Emit to sender and receiver if they joined their rooms
-    io.to(data.receiverId).emit("receiveMessage", saved);
-    io.to(data.senderId).emit("receiveMessage", saved);
-  } catch (err) {
-    console.error("Socket message error:", err.message);
-  }
-});
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    io.to(data.conversationId).emit("receiveMessage", msg);
   });
 });
+
 
 app.post("/google-login/customer", async (req, res) => {
   const { email, name } = req.body;
@@ -819,6 +797,7 @@ app.delete("/delete/:itemId", async (req, res) => {
 
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { error } = require("console");
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
