@@ -2,7 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const projectupload=require("./models/projectuplad")
 const Conversation = require("./models/Converstion");
-const Messages =require("./models/Message")
+const Message =require("./models/Message")
 
 
 const productdata = require("./models/vendorproudctdetails");
@@ -24,8 +24,7 @@ const hemlet=require("helmet")
 require('dotenv').config();
 const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
-const Message=require("./models/Converstion")
-const VendorMessage=require("./models/Message")
+
 const http = require('http');
 const { Server } = require('socket.io');
 
@@ -263,12 +262,17 @@ app.post('/api/chat/conversation', async (req, res) => {
     return res.status(500).json({ message: "Failed to create conversation" });
   }
 });
-app.get("/messages/:id", async (req, res) => {
-  const messages = await Message.find({
-    conversationId: req.params.id
-  }).sort({ createdAt: 1 });
+app.get("/api/chat/messages/:conversationId", async (req, res) => {
+  try {
+    const messages = await Message.find({
+      conversationId: req.params.conversationId
+    }).sort({ createdAt: 1 });
 
-  res.json(messages);
+    res.status(200).json(messages);
+  } catch (err) {
+    console.error("Fetch messages error:", err);
+    res.status(500).json({ message: "Failed to fetch messages" });
+  }
 });
 
 
@@ -284,7 +288,16 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendMessage", async (data) => {
-    const msg = await Message.create(data);
+  try {
+    const conversation = await Conversation.findById(data.conversationId);
+    if (!conversation) return;
+
+    const msg = await Message.create({
+      conversationId: data.conversationId,
+      senderId: data.senderId,
+      senderType: data.senderType,
+      message: data.message
+    });
 
     await Conversation.findByIdAndUpdate(data.conversationId, {
       lastMessage: data.message,
@@ -292,7 +305,11 @@ io.on("connection", (socket) => {
     });
 
     io.to(data.conversationId).emit("receiveMessage", msg);
-  });
+  } catch (err) {
+    console.error("Socket message error:", err);
+  }
+});
+
 });
 // Get all conversations for vendor
 app.get("/api/chat/conversations/vendor/:vendorId", async (req, res) => {
