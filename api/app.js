@@ -220,7 +220,7 @@ app.post('/api/chat/message', async (req, res) => {
       return res.status(403).json({ message: "Sender not allowed in this conversation" });
     }
 
-    const msg = await Messages.create({
+    const msg = await Message.create({
       conversationId,
       senderId,
       senderType,
