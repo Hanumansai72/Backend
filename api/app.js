@@ -26,9 +26,6 @@ const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
 const Message=require("./models/Converstion")
 const VendorMessage=require("./models/Message")
-const http = require('http');
-const { Server } = require('socket.io');
-const { createClient } = require("redis")
 
 
 
@@ -58,13 +55,7 @@ const limiter = ratelimter({
 app.use(limiter);
 
 
-const redisclient=createClient({
-  url:"redis://127.0.0.1:6379"
-})
-redisclient.on("error",(err)=>{
-  console.log(err)
-})
-redisclient.connect()
+
 app.use(express.json());
 
 const UserMain=require("./models/main_userprofile")
