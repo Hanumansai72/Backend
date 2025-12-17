@@ -294,6 +294,20 @@ io.on("connection", (socket) => {
     io.to(data.conversationId).emit("receiveMessage", msg);
   });
 });
+// Get all conversations for vendor
+app.get("/api/chat/conversations/vendor/:vendorId", async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      vendorId: req.params.vendorId
+    })
+      .populate("userId", "Full_Name Profile_Image")
+      .sort({ lastMessageAt: -1 });
+
+    res.json(conversations);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load conversations" });
+  }
+});
 
 
 app.post("/google-login/customer", async (req, res) => {
