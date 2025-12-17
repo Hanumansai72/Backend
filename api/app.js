@@ -26,6 +26,8 @@ const productwallet=require("./models/productwallet")
 const Wallet=require("./models/wallet")
 const Message=require("./models/Converstion")
 const VendorMessage=require("./models/Message")
+const http = require('http');
+const { Server } = require('socket.io');
 
 
 
@@ -42,6 +44,9 @@ cloudinary.config({
 
 
 
+const server = http.createServer(app);
+
+// ✅ ATTACH SOCKET.IO TO SERVER
 
 app.use(cors());
 app.use(hemlet());   // helmet()
