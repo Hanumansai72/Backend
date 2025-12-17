@@ -239,6 +239,37 @@ app.post('/api/chat/message', async (req, res) => {
     return res.status(500).json({ message: "Failed to send message" });
   }
 });
+// USER INBOX - list of vendors user has chatted with
+app.get("/api/chat/inbox/user/:userId", async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      userId: req.params.userId
+    })
+      .populate("vendorId", "Business_Name Owner_name Profile_Image")
+      .sort({ lastMessageAt: -1 });
+
+    res.status(200).json(conversations);
+  } catch (err) {
+    console.error("User inbox error:", err);
+    res.status(500).json({ message: "Failed to load user inbox" });
+  }
+});
+// VENDOR INBOX - list of users vendor has chatted with
+app.get("/api/chat/inbox/vendor/:vendorId", async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      vendorId: req.params.vendorId
+    })
+      .populate("userId", "Full_Name Profile_Image")
+      .sort({ lastMessageAt: -1 });
+
+    res.status(200).json(conversations);
+  } catch (err) {
+    console.error("Vendor inbox error:", err);
+    res.status(500).json({ message: "Failed to load vendor inbox" });
+  }
+});
+
 
 // ✅ Get conversation between Customer and Vendor
 app.post('/api/chat/conversation', async (req, res) => {
