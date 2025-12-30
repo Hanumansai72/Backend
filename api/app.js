@@ -81,7 +81,7 @@ app.use(compression());
 app.use(generalLimiter);
 
 
-// Redis and Session initialization
+// Session initialization
 let sessionMiddleware;
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'apna_mestri_secret',
