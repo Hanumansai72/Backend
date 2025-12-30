@@ -10,9 +10,8 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Config imports
 const connectDB = require('./config/database');
 const { initializeSocket } = require('./utils/socketHandler');
-const { initRedis, getRedisClient } = require('./config/redis');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
+
 
 // Middleware imports
 const { generalLimiter } = require('./middleware/rateLimiter');
@@ -97,22 +96,11 @@ const sessionConfig = {
   }
 };
 
-// Initialize session with a fallback mechanism
-const initializeApp = async () => {
-  try {
-    const client = await initRedis();
-    if (client) {
-      sessionConfig.store = new RedisStore({ client });
-      console.log('Session management with Redis initialized');
-    } else {
-      console.log('Session management fallback to memory initialized');
-    }
-  } catch (err) {
-    console.log('Redis initialization failed, using memory store:', err.message);
-  }
+// Initialize session using memory store
+app.use(session(sessionConfig));
 
-  // Use session middleware
-  app.use(session(sessionConfig));
+// Initialize application
+const initializeApp = () => {
 
   // Mounting routes AFTER session middleware is initialized
   app.use('/', authRoutes);
@@ -154,6 +142,12 @@ connectDB().then(() => {
 
   // Start the application
   initializeApp();
+}).catch(err => {
+  console.error('🛑 Failed to start application due to Database Error:', err.message);
+  // On local, we might want to exit, but on Vercel we'll just let it fail the request
+  if (process.env.NODE_ENV !== 'production') {
+    // process.exit(1); 
+  }
 });
 
 module.exports = app;
