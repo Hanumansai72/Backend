@@ -9,9 +9,7 @@ if (!process.env.API_KEY_HUGGEFACE && !process.env.HUGGINGFACE_API_KEY && !proce
     console.warn("WARNING: No HuggingFace/OpenAI API key found in environment variables (API_KEY_HUGGEFACE, HUGGINGFACE_API_KEY, OPENAI_API_KEY). AI features may fail.");
 }
 
-/**
- * Generate product description and tags using AI
- */
+
 async function generateDescription(category, subCategory) {
     const prompt = `Write a short product description and relevant comma-separated tags for a product in the category "${category}" and sub-category "${subCategory}". Format like this:
 
