@@ -1,30 +1,17 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const mongoURI = process.env.mongoURI_perment;
-
-    if (!mongoURI) {
-      console.error('❌ MongoDB URI is not defined in environment variables (mongoURI_perment)');
-      process.exit(1);
-    }
-
-    const maskedUri = mongoURI.replace(/:([^@]+)@/, ':****@');
-    console.log(`📡 Attempting to connect to: ${maskedUri}`);
-    await mongoose.connect(mongoURI);
-    console.log('✅ MongoDB Connected successfully');
+    await mongoose.connect("mongodb+srv://hanumansai72:PHxojTiAxGCBVXbJ@cluster0.lfuudui.mongodb.net/apana_mestri?retryWrites=true&w=majority&appName=Cluster0"
+      ,
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }
+    );
+    console.log("✅ Database Connected");
   } catch (err) {
-    console.error('❌ MongoDB connection error:', err.message);
-    console.error('Stack trace:', err.stack);
-
-    if (err.name === 'MongooseServerSelectionError') {
-      console.error('\n⚠️  TIP: This error usually means your IP address is not whitelisted in MongoDB Atlas.');
-      console.error('1. Log in to MongoDB Atlas');
-      console.error('2. Go to "Network Access"');
-      console.error('3. Add your current IP address (or 0.0.0.0/0 for testing)\n');
-    }
-
-    process.exit(1);
+    console.log("❌ Failed to connect database", err);
   }
 };
 
