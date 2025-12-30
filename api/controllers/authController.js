@@ -40,6 +40,14 @@ exports.adminLogin = async (req, res) => {
                 role: 'admin'
             });
 
+            if (req.session) {
+                req.session.user = {
+                    id: user._id,
+                    email: user.login.email,
+                    role: 'admin'
+                };
+            }
+
             return res.json({
                 message: 'Success',
                 token,
@@ -79,6 +87,15 @@ exports.vendorLogin = async (req, res) => {
                 email: vendor.Email_address,
                 role: 'vendor'
             });
+
+            if (req.session) {
+                req.session.user = {
+                    id: vendor._id,
+                    email: vendor.Email_address,
+                    role: 'vendor',
+                    businessName: vendor.Business_Name
+                };
+            }
 
             return res.json({
                 message: 'Success',
@@ -138,6 +155,15 @@ exports.loginWithOtpCustomer = async (req, res) => {
             email: user.Emailaddress,
             role: 'customer'
         });
+
+        if (req.session) {
+            req.session.user = {
+                id: user._id,
+                email: user.Emailaddress,
+                role: 'customer',
+                fullName: user.Full_Name
+            };
+        }
 
         return res.status(200).json({
             message: 'Success',
@@ -304,5 +330,35 @@ exports.forgetPassword = async (req, res) => {
     } catch (error) {
         console.error('Error in forget password:', error);
         res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+/**
+ * Get current authenticated user session
+ */
+exports.getMe = async (req, res) => {
+    if (req.session && req.session.user) {
+        return res.json({
+            authenticated: true,
+            user: req.session.user
+        });
+    }
+    return res.status(401).json({ authenticated: false, message: 'Not authenticated' });
+};
+
+/**
+ * Logout user and destroy session
+ */
+exports.logout = (req, res) => {
+    if (req.session) {
+        req.session.destroy(err => {
+            if (err) {
+                return res.status(500).json({ message: 'Could not log out, please try again' });
+            }
+            res.clearCookie('sessionId');
+            return res.json({ message: 'Logged out successfully' });
+        });
+    } else {
+        return res.json({ message: 'No session to logout' });
     }
 };

@@ -114,6 +114,11 @@ const clearCachePattern = async (pattern) => {
 };
 
 /**
+ * Get internal redis client
+ */
+const getRedisClient = () => redisClient;
+
+/**
  * Cache middleware
  */
 const cacheMiddleware = (duration = 600) => {
@@ -150,5 +155,6 @@ module.exports = {
     setCache,
     deleteCache,
     clearCachePattern,
-    cacheMiddleware
+    cacheMiddleware,
+    getRedisClient
 };

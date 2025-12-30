@@ -72,4 +72,10 @@ router.put('/forgetpassword',
     authController.forgetPassword
 );
 
+// Get current session
+router.get('/me', authController.getMe);
+
+// Logout
+router.post('/logout', authController.logout);
+
 module.exports = router;
