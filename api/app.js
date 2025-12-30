@@ -10,8 +10,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 // Config imports
 const connectDB = require('./config/database');
 const { initializeSocket } = require('./utils/socketHandler');
-const session = require('express-session');
-
+const { initRedis } = require('./config/redis');
 
 // Middleware imports
 const { generalLimiter } = require('./middleware/rateLimiter');
@@ -40,11 +39,10 @@ app.set('trust proxy', 1);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()) || ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:5174'],
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Security headers
@@ -80,74 +78,36 @@ app.use(compression());
 // Rate limiting
 app.use(generalLimiter);
 
-
-// Session initialization
-let sessionMiddleware;
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'apna_mestri_secret',
-  resave: false,
-  saveUninitialized: false,
-  name: 'sessionId',
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-  }
-};
-
-// Initialize session using memory store
-app.use(session(sessionConfig));
-
-// Initialize application
-const initializeApp = () => {
-
-  // Mounting routes AFTER session middleware is initialized
-  app.use('/', authRoutes);
-  app.use('/', vendorRoutes);
-  app.use('/', productRoutes);
-  app.use('/', orderRoutes);
-  app.use('/', cartRoutes);
-  app.use('/', bookingRoutes);
-  app.use('/', chatRoutes);
-  app.use('/', walletRoutes);
-  app.use('/', reviewRoutes);
-  app.use('/', projectRoutes);
-  app.use('/', userRoutes);
-  app.use('/', utilityRoutes);
-
-  // Catch-all for unmatched routes to debug 204/404 issues
-  app.use((req, res) => {
-    console.log(`Unmatched Route: ${req.method} ${req.originalUrl}`);
-    res.status(404).json({
-      success: false,
-      message: `Route ${req.originalUrl} not found`,
-      method: req.method
-    });
-  });
-
-  // Error handling middleware (must be last)
-  app.use(errorHandler);
-
-  // Server start
-  server.listen(8031, () => {
-    console.log('Server started on http://localhost:8031');
-  });
-};
-
 // Database connection
-connectDB().then(() => {
-  // Socket.IO initialization
-  initializeSocket(server);
+connectDB();
 
-  // Start the application
-  initializeApp();
-}).catch(err => {
-  console.error('🛑 Failed to start application due to Database Error:', err.message);
-  // On local, we might want to exit, but on Vercel we'll just let it fail the request
-  if (process.env.NODE_ENV !== 'production') {
-    // process.exit(1); 
-  }
+// Redis initialization (optional - won't fail if not configured)
+initRedis().catch(err => console.log('Redis not available:', err.message));
+
+// Socket.IO initialization
+initializeSocket(server);
+
+// Routes - mounting all route modules
+// Note: Routes are mounted without prefix to maintain backward compatibility
+app.use('/', authRoutes);
+app.use('/', vendorRoutes);
+app.use('/', productRoutes);
+app.use('/', orderRoutes);
+app.use('/', cartRoutes);
+app.use('/', bookingRoutes);
+app.use('/', chatRoutes);
+app.use('/', walletRoutes);
+app.use('/', reviewRoutes);
+app.use('/', projectRoutes);
+app.use('/', userRoutes);
+app.use('/', utilityRoutes);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
+
+// Server start
+server.listen(8031, () => {
+  console.log('Server started on http://localhost:8031');
 });
 
 module.exports = app;
