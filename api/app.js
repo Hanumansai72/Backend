@@ -129,7 +129,7 @@ const initializeApp = async () => {
   app.use('/', utilityRoutes);
 
   // Catch-all for unmatched routes to debug 204/404 issues
-  app.use('*', (req, res) => {
+  app.use('(.*)', (req, res) => {
     console.log(`Unmatched Route: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
       success: false,
