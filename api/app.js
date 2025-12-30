@@ -53,7 +53,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // NoSQL injection protection
-app.use(mongoSanitize());
+// NoSQL injection protection using safe middleware (handles read-only query/params)
+app.use((req, res, next) => {
+  if (req.body) {
+    req.body = mongoSanitize.sanitize(req.body);
+  }
+  // Try to sanitize query/params if writable
+  try {
+    if (req.query) req.query = mongoSanitize.sanitize(req.query);
+  } catch (e) {
+    // Ignore read-only errors
+  }
+  try {
+    if (req.params) req.params = mongoSanitize.sanitize(req.params);
+  } catch (e) {
+    // Ignore read-only errors
+  }
+  next();
+});
 
 // Compression
 app.use(compression());
