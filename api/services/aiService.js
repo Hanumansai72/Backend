@@ -2,8 +2,12 @@ const { OpenAI } = require('openai');
 
 const client = new OpenAI({
     baseURL: 'https://router.huggingface.co/nebius/v1',
-    apiKey: process.env.HUGGINGFACE_API_KEY,
+    baseURL: 'https://router.huggingface.co/nebius/v1',
+    apiKey: process.env.API_KEY_HUGGEFACE || process.env.HUGGINGFACE_API_KEY || process.env.OPENAI_API_KEY,
 });
+if (!process.env.API_KEY_HUGGEFACE && !process.env.HUGGINGFACE_API_KEY && !process.env.OPENAI_API_KEY) {
+    console.warn("WARNING: No HuggingFace/OpenAI API key found in environment variables (API_KEY_HUGGEFACE, HUGGINGFACE_API_KEY, OPENAI_API_KEY). AI features may fail.");
+}
 
 /**
  * Generate product description and tags using AI
