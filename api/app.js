@@ -81,64 +81,79 @@ app.use(compression());
 // Rate limiting
 app.use(generalLimiter);
 
-// Database connection
-connectDB();
 
-// Redis initialization
-initRedis().then((client) => {
-  if (client) {
-    app.use(session({
-      store: new RedisStore({ client }),
-      secret: process.env.SESSION_SECRET || 'apna_mestri_secret',
-      resave: false,
-      saveUninitialized: false,
-      name: 'sessionId',
-      cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
-      }
-    }));
-    console.log('Session management with Redis initialized');
-  } else {
-    // Fallback to memory store if Redis is unavailable (not recommended for production)
-    app.use(session({
-      secret: process.env.SESSION_SECRET || 'apna_mestri_secret',
-      resave: false,
-      saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === 'production' }
-    }));
-    console.log('Session management fallback to memory initialized');
+// Redis and Session initialization
+let sessionMiddleware;
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'apna_mestri_secret',
+  resave: false,
+  saveUninitialized: false,
+  name: 'sessionId',
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
   }
-}).catch(err => {
-  console.log('Redis initialization failed, session management may be limited:', err.message);
-});
+};
 
-// Socket.IO initialization
-initializeSocket(server);
+// Initialize session with a fallback mechanism
+const initializeApp = async () => {
+  try {
+    const client = await initRedis();
+    if (client) {
+      sessionConfig.store = new RedisStore({ client });
+      console.log('Session management with Redis initialized');
+    } else {
+      console.log('Session management fallback to memory initialized');
+    }
+  } catch (err) {
+    console.log('Redis initialization failed, using memory store:', err.message);
+  }
 
-// Routes - mounting all route modules
-// Note: Routes are mounted without prefix to maintain backward compatibility
-app.use('/', authRoutes);
-app.use('/', vendorRoutes);
-app.use('/', productRoutes);
-app.use('/', orderRoutes);
-app.use('/', cartRoutes);
-app.use('/', bookingRoutes);
-app.use('/', chatRoutes);
-app.use('/', walletRoutes);
-app.use('/', reviewRoutes);
-app.use('/', projectRoutes);
-app.use('/', userRoutes);
-app.use('/', utilityRoutes);
+  // Use session middleware
+  app.use(session(sessionConfig));
 
-// Error handling middleware (must be last)
-app.use(errorHandler);
+  // Mounting routes AFTER session middleware is initialized
+  app.use('/', authRoutes);
+  app.use('/', vendorRoutes);
+  app.use('/', productRoutes);
+  app.use('/', orderRoutes);
+  app.use('/', cartRoutes);
+  app.use('/', bookingRoutes);
+  app.use('/', chatRoutes);
+  app.use('/', walletRoutes);
+  app.use('/', reviewRoutes);
+  app.use('/', projectRoutes);
+  app.use('/', userRoutes);
+  app.use('/', utilityRoutes);
 
-// Server start
-server.listen(8031, () => {
-  console.log('Server started on http://localhost:8031');
+  // Catch-all for unmatched routes to debug 204/404 issues
+  app.use('*', (req, res) => {
+    console.log(`Unmatched Route: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({
+      success: false,
+      message: `Route ${req.originalUrl} not found`,
+      method: req.method
+    });
+  });
+
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
+
+  // Server start
+  server.listen(8031, () => {
+    console.log('Server started on http://localhost:8031');
+  });
+};
+
+// Database connection
+connectDB().then(() => {
+  // Socket.IO initialization
+  initializeSocket(server);
+
+  // Start the application
+  initializeApp();
 });
 
 module.exports = app;

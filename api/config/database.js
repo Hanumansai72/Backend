@@ -9,10 +9,13 @@ const connectDB = async () => {
       process.exit(1);
     }
 
+    const maskedUri = mongoURI.replace(/:([^@]+)@/, ':****@');
+    console.log(`📡 Attempting to connect to: ${maskedUri}`);
     await mongoose.connect(mongoURI);
     console.log('✅ MongoDB Connected successfully');
   } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
+    console.error('Stack trace:', err.stack);
 
     if (err.name === 'MongooseServerSelectionError') {
       console.error('\n⚠️  TIP: This error usually means your IP address is not whitelisted in MongoDB Atlas.');

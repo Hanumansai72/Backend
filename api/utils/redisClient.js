@@ -1,8 +1,6 @@
 // redisClient.js
-const express =require("express");
-const { createClient } = require("redis")
-
-dotenv.config();
+const { createClient } = require("redis");
+require('dotenv').config();
 
 let client = null;
 
@@ -10,7 +8,7 @@ let client = null;
  * Returns an already-connected client or creates/connects one.
  * Use getClient() in your app files.
  */
-export async function getClient() {
+async function getClient() {
   if (client && client.isOpen) return client;
 
   client = createClient({ url: process.env.REDIS_URL });
@@ -25,7 +23,7 @@ export async function getClient() {
 /**
  * For graceful shutdown
  */
-export async function quitClient() {
+async function quitClient() {
   if (client) {
     try {
       await client.quit();
@@ -35,3 +33,8 @@ export async function quitClient() {
     }
   }
 }
+
+module.exports = {
+  getClient,
+  quitClient
+};
