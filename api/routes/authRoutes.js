@@ -3,6 +3,10 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const { authLimiter, otpLimiter } = require('../middleware/rateLimiter');
 const { validationRules, handleValidationErrors } = require('../middleware/validation');
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
+
+// Get current user (protected route)
+router.get('/me', optionalAuth, authController.getCurrentUser);
 
 // Admin login
 router.post('/login',

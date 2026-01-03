@@ -37,13 +37,16 @@ const server = http.createServer(app);
 // Security Middleware
 app.set('trust proxy', 1);
 
-// CORS configuration
+// CORS configuration - Simple setup for token-based auth
+// Since we use Authorization headers (not cookies), we can use wildcard origin
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Security headers
 app.use(helmet());

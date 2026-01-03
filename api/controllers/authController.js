@@ -304,3 +304,62 @@ exports.forgetPassword = async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
+/**
+ * Get current user from token
+ */
+exports.getCurrentUser = async (req, res) => {
+    try {
+        // req.user is set by authenticateToken middleware
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authenticated' });
+        }
+
+        const { id, email, role } = req.user;
+
+        // Fetch full user data based on role
+        if (role === 'vendor') {
+            const vendor = await Vendor.findById(id).select('-Password');
+            if (!vendor) {
+                return res.status(404).json({ message: 'Vendor not found' });
+            }
+            return res.json({
+                message: 'Success',
+                user: {
+                    id: vendor._id,
+                    email: vendor.Email_address,
+                    businessName: vendor.Business_Name,
+                    ownerName: vendor.Owner_name,
+                    role: 'vendor'
+                }
+            });
+        } else if (role === 'customer') {
+            const user = await UserMain.findById(id).select('-Password');
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+            return res.json({
+                message: 'Success',
+                user: {
+                    id: user._id,
+                    email: user.Emailaddress,
+                    fullName: user.Full_Name,
+                    role: 'customer'
+                }
+            });
+        } else {
+            // Admin or other roles
+            return res.json({
+                message: 'Success',
+                user: {
+                    id,
+                    email,
+                    role
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
