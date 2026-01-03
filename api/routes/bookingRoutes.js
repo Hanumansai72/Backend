@@ -26,6 +26,9 @@ router.get('/cart/service/:id', bookingController.getCartServices);
 // Get upcoming works
 router.get('/upcomingworks/:id', bookingController.getUpcomingWorks);
 
+// Get upcoming jobs (alias for new jobs logic for dashboard popup)
+router.get('/upcomingjobs/:id', bookingController.getNewJobs);
+
 // Create booking
 router.post('/api/booking', bookingController.createBooking);
 
