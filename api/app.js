@@ -41,8 +41,8 @@ app.set('trust proxy', 1);
 // Since we use Authorization headers (not cookies), we can use wildcard origin
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept'],
   preflightContinue: false,
   optionsSuccessStatus: 204
 }));
