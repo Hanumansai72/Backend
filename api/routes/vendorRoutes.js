@@ -20,6 +20,7 @@ router.get('/api/getdetails/vendor/:id', vendorController.getVendorDetails);
 
 // Get vendor settings
 router.get('/:id/settings', vendorController.getVendorSettings);
+router.get('/jobhistry/:id', vendorController.Getjobhistory)
 
 // Get professional details
 router.get('/profesionaldetails/:id', vendorController.getProfessionalDetails);

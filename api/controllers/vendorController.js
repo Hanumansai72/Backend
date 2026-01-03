@@ -128,6 +128,15 @@ exports.getProfessionalDetails = async (req, res) => {
         res.json(err);
     }
 };
+exports.Getjobhistory=async (req,res)=>{
+    const id=req.params.id;
+    try{
+      const databse1=await booking_service.find({Vendorid:id,status:"Completed"})
+      res.json(databse1)
+    }
+    catch(err){
+      res.json(err)
+}}
 
 /**
  * Get vendor category by ID
