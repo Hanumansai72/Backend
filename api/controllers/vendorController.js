@@ -105,10 +105,19 @@ exports.getVendorDetails = async (req, res) => {
 exports.getVendorSettings = async (req, res) => {
     try {
         const vendorsid = req.params.id;
+
+        // Verify vendor can only access their own settings
+        if (req.user && req.user.id !== vendorsid && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. You can only view your own settings.' });
+        }
+
         const datasettings = await Vendor.findById(vendorsid);
+        if (!datasettings) {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
         res.json({ datasettings });
     } catch (err) {
-        res.json('got an error', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -128,15 +137,21 @@ exports.getProfessionalDetails = async (req, res) => {
         res.json(err);
     }
 };
-exports.Getjobhistory=async (req,res)=>{
-    const id=req.params.id;
-    try{
-      const databse1=await booking_service.find({Vendorid:id,status:"Completed"})
-      res.json(databse1)
+exports.Getjobhistory = async (req, res) => {
+    const id = req.params.id;
+
+    // Verify vendor can only access their own job history
+    if (req.user && req.user.id !== id && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied. You can only view your own job history.' });
     }
-    catch(err){
-      res.json(err)
-}}
+
+    try {
+        const databse1 = await booking_service.find({ Vendorid: id, status: "Completed" });
+        res.json(databse1);
+    } catch (err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
 
 /**
  * Get vendor category by ID
@@ -513,6 +528,12 @@ exports.checkTempVendor = async (req, res) => {
 exports.updateVendorDetails = async (req, res) => {
     try {
         const userid = req.params.id;
+
+        // Verify vendor can only update their own details
+        if (req.user && req.user.id !== userid && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. You can only update your own profile.' });
+        }
+
         const cloudinary = require('../config/cloudinary');
 
         let {

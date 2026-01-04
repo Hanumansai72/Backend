@@ -8,10 +8,19 @@ const { sendEmail } = require('../services/emailService');
 exports.getUserProfile = async (req, res) => {
   try {
     const id = req.params.id;
+
+    // Verify user can only access their own profile
+    if (req.user && req.user.id !== id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. You can only view your own profile.' });
+    }
+
     const myprofileid = await UserMain.findById(id);
+    if (!myprofileid) {
+      return res.status(404).json({ message: 'User not found' });
+    }
     res.json(myprofileid);
   } catch (err) {
-    res.json(err);
+    res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
@@ -143,9 +152,11 @@ exports.updateUserProfile = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
-    // Exclude password from direct updates via this endpoint for security if needed, 
-    // but for now we'll allow all fields except _id. 
-    // If password is being updated, it should be hashed, but let's assume this is for general profile info.
+    // Verify user can only update their own profile
+    if (req.user && req.user.id !== id && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. You can only update your own profile.' });
+    }
+
     // If password is included in updates, we need to hash it.
     if (updates.Password) {
       const saltRounds = 10;

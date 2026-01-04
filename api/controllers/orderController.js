@@ -6,9 +6,15 @@ const vieworder = require('../models/productorders');
 exports.getPendingOrders = async (req, res) => {
     try {
         const { search, page = 1, limit = 10 } = req.query;
+        const vendorId = req.params.id;
+
+        // Verify vendor can only access their own orders
+        if (req.user && req.user.id !== vendorId && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
+        }
 
         const query = {
-            vendorid: req.params.id,
+            vendorid: vendorId,
             orderStatus: { $in: ['Pending', 'Processing'] }
         };
 
@@ -41,6 +47,12 @@ exports.getPendingOrders = async (req, res) => {
 exports.getVendorOrders = async (req, res) => {
     try {
         const id = req.params.id;
+
+        // Verify vendor can only access their own orders
+        if (req.user && req.user.id !== id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
+        }
+
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
@@ -64,10 +76,16 @@ exports.getVendorOrders = async (req, res) => {
 exports.getCustomerOrders = async (req, res) => {
     try {
         const id = req.params.id;
+
+        // Verify customer can only access their own orders
+        if (req.user && req.user.id !== id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
+        }
+
         const ordercustomer = await vieworder.find({ customerId: id });
         res.json(ordercustomer);
     } catch (err) {
-        res.json(err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
