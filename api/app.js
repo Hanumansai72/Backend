@@ -37,10 +37,31 @@ const server = http.createServer(app);
 // Security Middleware
 app.set('trust proxy', 1);
 
-// CORS configuration - Simple setup for token-based auth
-// Since we use Authorization headers (not cookies), we can use wildcard origin
+// CORS configuration - Specific origins for credentials mode
+const allowedOrigins = [
+  'https://www.apnamestri.com',
+  'https://apnamestri.com',
+  'https://product-apna-mestri.vercel.app',
+  'https://vendor-apna.vercel.app',
+  'https://admin-apna-mestri.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002'
+];
+
 app.use(cors({
-  origin: '*',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Allow all for now, but log it
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Accept'],
   preflightContinue: false,
