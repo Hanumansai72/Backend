@@ -207,7 +207,22 @@ exports.googleLoginCustomer = async (req, res) => {
             });
         }
 
-        res.json({ message: 'Success', user });
+        const { generateToken } = require('../middleware/auth');
+        const token = generateToken({
+            id: user._id,
+            email: user.Emailaddress,
+            role: 'customer'
+        });
+
+        res.json({
+            message: 'Success',
+            token,
+            user: {
+                id: user._id,
+                email: user.Emailaddress,
+                fullName: user.Full_Name
+            }
+        });
     } catch (err) {
         console.error('Google login error:', err);
         res.status(500).json({
@@ -310,9 +325,9 @@ exports.forgetPassword = async (req, res) => {
  */
 exports.getCurrentUser = async (req, res) => {
     try {
-        // req.user is set by authenticateToken middleware
+        // req.user is set by optionalAuth middleware
         if (!req.user) {
-            return res.status(401).json({ message: 'Not authenticated' });
+            return res.json({ authenticated: false, message: 'Not authenticated' });
         }
 
         const { id, email, role } = req.user;
@@ -321,9 +336,10 @@ exports.getCurrentUser = async (req, res) => {
         if (role === 'vendor') {
             const vendor = await Vendor.findById(id).select('-Password');
             if (!vendor) {
-                return res.status(404).json({ message: 'Vendor not found' });
+                return res.status(404).json({ authenticated: false, message: 'Vendor not found' });
             }
             return res.json({
+                authenticated: true,
                 message: 'Success',
                 user: {
                     id: vendor._id,
@@ -336,9 +352,10 @@ exports.getCurrentUser = async (req, res) => {
         } else if (role === 'customer') {
             const user = await UserMain.findById(id).select('-Password');
             if (!user) {
-                return res.status(404).json({ message: 'User not found' });
+                return res.status(404).json({ authenticated: false, message: 'User not found' });
             }
             return res.json({
+                authenticated: true,
                 message: 'Success',
                 user: {
                     id: user._id,
@@ -350,6 +367,7 @@ exports.getCurrentUser = async (req, res) => {
         } else {
             // Admin or other roles
             return res.json({
+                authenticated: true,
                 message: 'Success',
                 user: {
                     id,

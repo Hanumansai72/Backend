@@ -109,9 +109,21 @@ exports.loginUser = async (req, res) => {
     const isPasswordMatch = await bcrypt.compare(password, user.Password);
 
     if (isPasswordMatch) {
+      const { generateToken } = require('../middleware/auth');
+      const token = generateToken({
+        id: user._id,
+        email: user.Emailaddress,
+        role: 'customer'
+      });
+
       return res.status(200).json({
         message: 'Success',
-        user,
+        token,
+        user: {
+          id: user._id,
+          email: user.Emailaddress,
+          fullName: user.Full_Name
+        },
         userId: user._id
       });
     } else {
