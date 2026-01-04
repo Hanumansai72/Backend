@@ -110,7 +110,24 @@ exports.loginWithOtpVendor = async (req, res) => {
             return res.json({ message: 'User not found' });
         }
 
-        return res.json({ message: 'Success', vendorId: vendor._id });
+        const { generateToken } = require('../middleware/auth');
+        const token = generateToken({
+            id: vendor._id,
+            email: vendor.Email_address,
+            role: 'vendor'
+        });
+
+        return res.json({
+            message: 'Success',
+            token,
+            vendorId: vendor._id,
+            vendor: {
+                id: vendor._id,
+                businessName: vendor.Business_Name,
+                ownerName: vendor.Owner_name,
+                email: vendor.Email_address
+            }
+        });
     } catch (err) {
         console.error('Login with OTP error:', err);
         return res.status(500).json({ message: 'Server error during login with OTP' });
@@ -165,11 +182,24 @@ exports.googleLoginVendor = async (req, res) => {
         const tempVendor = await TempVendor.findOne({ Email_address: email });
 
         if (vendor) {
-            if (vendor) {
-                return res.json({ message: 'Success', vendorId: vendor._id });
-            } else {
-                return res.json({ message: 'User pending approval' });
-            }
+            const { generateToken } = require('../middleware/auth');
+            const token = generateToken({
+                id: vendor._id,
+                email: vendor.Email_address,
+                role: 'vendor'
+            });
+
+            return res.json({
+                message: 'Success',
+                token,
+                vendorId: vendor._id,
+                vendor: {
+                    id: vendor._id,
+                    businessName: vendor.Business_Name,
+                    ownerName: vendor.Owner_name,
+                    email: vendor.Email_address
+                }
+            });
         } else if (tempVendor) {
             return res.json({ message: 'User pending approval' });
         } else {

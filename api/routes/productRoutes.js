@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
+const { authenticateToken } = require('../middleware/auth');
 
-// Get all products
+// Public routes - Get all products
 router.get('/fetch', productController.getAllProducts);
 
 // Get product by ID
@@ -17,9 +18,6 @@ router.get('/viewproduct/:vendorId', productController.getProductsByVendor);
 // Get product count for vendor
 router.get('/api/getproductcount/:id', productController.getProductCount);
 
-// Add product
-router.post('/addproduct', productController.addProduct);
-
 // View store products
 router.post('/api/viewstore', productController.viewStore);
 
@@ -29,10 +27,15 @@ router.post('/updateview/:id', productController.updateProductView);
 // Get recent products
 router.post('/recent-products', productController.getRecentProducts);
 
+// Protected routes - require authentication
+// Add product
+router.post('/addproduct', authenticateToken, productController.addProduct);
+
 // Update product
-router.put('/updatedetails/:productId', productController.updateProduct);
+router.put('/updatedetails/:productId', authenticateToken, productController.updateProduct);
 
 // Delete product
-router.delete('/delete/:id', productController.deleteProduct);
+router.delete('/delete/:id', authenticateToken, productController.deleteProduct);
 
 module.exports = router;
+
