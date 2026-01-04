@@ -1,17 +1,19 @@
 const redis = require('redis');
 
 let redisClient = null;
+let inMemoryCache = new Map();
 
 /**
  * Initialize Redis client
- * Completely disabled if REDIS_URL is not set or points to localhost
+ * Falls back to in-memory cache if Redis is not available
  */
 const initRedis = async () => {
     try {
-        // Skip Redis if URL not configured or if it's localhost (for local development)
-        const redisUrl = process.env.REDIS_URL;
-        if (!redisUrl || redisUrl.includes('127.0.0.1') || redisUrl.includes('localhost')) {
-            console.log('Redis disabled (no remote URL configured). Caching disabled.');
+        const redisUrl = "redis://default:NDLGFWNhDRmjRRLWJkHlhvo9qhDoiEXh@redis-18600.c266.us-east-1-3.ec2.cloud.redislabs.com:18600";
+
+        // If no Redis URL, use in-memory caching
+        if (!redisUrl) {
+            console.log('Redis URL not configured. Using in-memory cache.');
             return null;
         }
 
@@ -20,7 +22,7 @@ const initRedis = async () => {
             socket: {
                 reconnectStrategy: (retries) => {
                     if (retries > 3) {
-                        console.error('Redis: Too many retries, giving up');
+                        console.error('Redis: Too many retries, falling back to in-memory cache');
                         return new Error('Too many retries');
                     }
                     return retries * 100;
@@ -40,41 +42,71 @@ const initRedis = async () => {
         return redisClient;
     } catch (error) {
         console.error('Redis initialization failed:', error.message);
+        console.log('Falling back to in-memory cache');
         redisClient = null;
         return null;
     }
 };
 
 /**
- * Get value from cache
+ * Get value from cache (Redis or in-memory)
  */
 const getCache = async (key) => {
-    if (!redisClient || !redisClient.isOpen) {
-        return null;
-    }
-
     try {
-        const data = await redisClient.get(key);
-        return data ? JSON.parse(data) : null;
+        // Try Redis first
+        if (redisClient && redisClient.isOpen) {
+            const data = await redisClient.get(key);
+            return data ? JSON.parse(data) : null;
+        }
+
+        // Fall back to in-memory
+        const cached = inMemoryCache.get(key);
+        if (cached && cached.expiry > Date.now()) {
+            return cached.data;
+        }
+
+        // Expired, delete it
+        if (cached) {
+            inMemoryCache.delete(key);
+        }
+
+        return null;
     } catch (error) {
-        console.error('Redis get error:', error);
+        console.error('Cache get error:', error);
         return null;
     }
 };
 
 /**
- * Set value in cache
+ * Set value in cache (Redis or in-memory)
  */
 const setCache = async (key, value, expirationInSeconds = 600) => {
-    if (!redisClient || !redisClient.isOpen) {
-        return false;
-    }
-
     try {
-        await redisClient.setEx(key, expirationInSeconds, JSON.stringify(value));
+        // Try Redis first
+        if (redisClient && redisClient.isOpen) {
+            await redisClient.setEx(key, expirationInSeconds, JSON.stringify(value));
+            return true;
+        }
+
+        // Fall back to in-memory
+        inMemoryCache.set(key, {
+            data: value,
+            expiry: Date.now() + (expirationInSeconds * 1000)
+        });
+
+        // Clean up expired entries periodically (max 1000 entries)
+        if (inMemoryCache.size > 1000) {
+            const now = Date.now();
+            for (const [k, v] of inMemoryCache.entries()) {
+                if (v.expiry < now) {
+                    inMemoryCache.delete(k);
+                }
+            }
+        }
+
         return true;
     } catch (error) {
-        console.error('Redis set error:', error);
+        console.error('Cache set error:', error);
         return false;
     }
 };
@@ -83,15 +115,14 @@ const setCache = async (key, value, expirationInSeconds = 600) => {
  * Delete value from cache
  */
 const deleteCache = async (key) => {
-    if (!redisClient || !redisClient.isOpen) {
-        return false;
-    }
-
     try {
-        await redisClient.del(key);
+        if (redisClient && redisClient.isOpen) {
+            await redisClient.del(key);
+        }
+        inMemoryCache.delete(key);
         return true;
     } catch (error) {
-        console.error('Redis delete error:', error);
+        console.error('Cache delete error:', error);
         return false;
     }
 };
@@ -100,50 +131,78 @@ const deleteCache = async (key) => {
  * Clear all cache with pattern
  */
 const clearCachePattern = async (pattern) => {
-    if (!redisClient || !redisClient.isOpen) {
-        return false;
-    }
-
     try {
-        const keys = await redisClient.keys(pattern);
-        if (keys.length > 0) {
-            await redisClient.del(keys);
+        if (redisClient && redisClient.isOpen) {
+            const keys = await redisClient.keys(pattern);
+            if (keys.length > 0) {
+                await redisClient.del(keys);
+            }
         }
+
+        // For in-memory, clear matching keys
+        const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+        for (const key of inMemoryCache.keys()) {
+            if (regex.test(key)) {
+                inMemoryCache.delete(key);
+            }
+        }
+
         return true;
     } catch (error) {
-        console.error('Redis clear pattern error:', error);
+        console.error('Cache clear pattern error:', error);
         return false;
     }
 };
 
 /**
- * Cache middleware
+ * Cache middleware - automatically caches GET responses
  */
-const cacheMiddleware = (duration = 600) => {
+const cacheMiddleware = (duration = 300) => {
     return async (req, res, next) => {
+        // Only cache GET requests
         if (req.method !== 'GET') {
             return next();
         }
 
         const key = `cache:${req.originalUrl}`;
-        const cachedData = await getCache(key);
 
-        if (cachedData) {
-            return res.json(cachedData);
+        try {
+            const cachedData = await getCache(key);
+
+            if (cachedData) {
+                // Add cache hit header for debugging
+                res.set('X-Cache', 'HIT');
+                return res.json(cachedData);
+            }
+
+            // Store original json function
+            const originalJson = res.json.bind(res);
+
+            // Override json function to cache the response
+            res.json = (data) => {
+                // Only cache successful responses
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    setCache(key, data, duration);
+                }
+                res.set('X-Cache', 'MISS');
+                return originalJson(data);
+            };
+
+            next();
+        } catch (error) {
+            console.error('Cache middleware error:', error);
+            next();
         }
+    };
+};
 
-        // Store original send function
-        const originalSend = res.json;
-
-        // Override send function
-        res.json = function (data) {
-            // Cache the response
-            setCache(key, data, duration);
-            // Call original send
-            originalSend.call(this, data);
-        };
-
-        next();
+/**
+ * Get cache stats
+ */
+const getCacheStats = () => {
+    return {
+        type: redisClient && redisClient.isOpen ? 'redis' : 'in-memory',
+        inMemorySize: inMemoryCache.size
     };
 };
 
@@ -153,5 +212,6 @@ module.exports = {
     setCache,
     deleteCache,
     clearCachePattern,
-    cacheMiddleware
+    cacheMiddleware,
+    getCacheStats
 };

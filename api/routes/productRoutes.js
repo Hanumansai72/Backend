@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
 const { authenticateToken } = require('../middleware/auth');
+const { cacheMiddleware } = require('../config/redis');
 
-// Public routes - Get all products
-router.get('/fetch', productController.getAllProducts);
+// Public routes - Get all products (cached 3 min)
+router.get('/fetch', cacheMiddleware(180), productController.getAllProducts);
 
-// Get product by ID
-router.get('/product/:id', productController.getProductById);
+// Get product by ID (cached 5 min)
+router.get('/product/:id', cacheMiddleware(300), productController.getProductById);
 
-// Get related products
-router.get('/related-products/:category', productController.getRelatedProducts);
+// Get related products (cached 5 min)
+router.get('/related-products/:category', cacheMiddleware(300), productController.getRelatedProducts);
 
 // Get products by vendor
 router.get('/viewproduct/:vendorId', productController.getProductsByVendor);

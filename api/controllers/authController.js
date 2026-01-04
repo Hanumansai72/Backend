@@ -4,6 +4,7 @@ const Vendor = require('../models/admin');
 const UserMain = require('../models/main_userprofile');
 const otpsender = require('../models/otpschema');
 const { sendOTP } = require('../services/emailService');
+const { generateToken, setCookieToken, clearCookieToken } = require('../middleware/auth');
 
 // Admin Login Schema
 const AdminLoginSchema = new mongoose.Schema({
@@ -33,16 +34,18 @@ exports.adminLogin = async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, user.login.password);
 
         if (passwordMatch) {
-            const { generateToken } = require('../middleware/auth');
             const token = generateToken({
                 id: user._id,
                 email: user.login.email,
                 role: 'admin'
             });
 
+            // Set HTTP-only cookie
+            setCookieToken(res, token);
+
             return res.json({
                 message: 'Success',
-                token,
+                token, // Still return token for backward compatibility
                 user: {
                     id: user._id,
                     email: user.login.email
@@ -73,16 +76,18 @@ exports.vendorLogin = async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, vendor.Password);
 
         if (passwordMatch) {
-            const { generateToken } = require('../middleware/auth');
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
                 role: 'vendor'
             });
 
+            // Set HTTP-only cookie
+            setCookieToken(res, token);
+
             return res.json({
                 message: 'Success',
-                token,
+                token, // Still return token for backward compatibility
                 vendorId: vendor._id,
                 vendor: {
                     id: vendor._id,
@@ -110,16 +115,18 @@ exports.loginWithOtpVendor = async (req, res) => {
             return res.json({ message: 'User not found' });
         }
 
-        const { generateToken } = require('../middleware/auth');
         const token = generateToken({
             id: vendor._id,
             email: vendor.Email_address,
             role: 'vendor'
         });
 
+        // Set HTTP-only cookie
+        setCookieToken(res, token);
+
         return res.json({
             message: 'Success',
-            token,
+            token, // Still return token for backward compatibility
             vendorId: vendor._id,
             vendor: {
                 id: vendor._id,
@@ -147,16 +154,18 @@ exports.loginWithOtpCustomer = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const { generateToken } = require('../middleware/auth');
         const token = generateToken({
             id: user._id,
             email: user.Emailaddress,
             role: 'customer'
         });
 
+        // Set HTTP-only cookie
+        setCookieToken(res, token);
+
         return res.status(200).json({
             message: 'Success',
-            token,
+            token, // Still return token for backward compatibility
             userId: user._id,
             user: {
                 id: user._id,
@@ -182,16 +191,18 @@ exports.googleLoginVendor = async (req, res) => {
         const tempVendor = await TempVendor.findOne({ Email_address: email });
 
         if (vendor) {
-            const { generateToken } = require('../middleware/auth');
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
                 role: 'vendor'
             });
 
+            // Set HTTP-only cookie
+            setCookieToken(res, token);
+
             return res.json({
                 message: 'Success',
-                token,
+                token, // Still return token for backward compatibility
                 vendorId: vendor._id,
                 vendor: {
                     id: vendor._id,
@@ -237,16 +248,18 @@ exports.googleLoginCustomer = async (req, res) => {
             });
         }
 
-        const { generateToken } = require('../middleware/auth');
         const token = generateToken({
             id: user._id,
             email: user.Emailaddress,
             role: 'customer'
         });
 
+        // Set HTTP-only cookie
+        setCookieToken(res, token);
+
         res.json({
             message: 'Success',
-            token,
+            token, // Still return token for backward compatibility
             user: {
                 id: user._id,
                 email: user.Emailaddress,
@@ -259,6 +272,19 @@ exports.googleLoginCustomer = async (req, res) => {
             message: 'Google login failed',
             error: err.message
         });
+    }
+};
+
+/**
+ * Logout - Clear auth cookies
+ */
+exports.logout = async (req, res) => {
+    try {
+        clearCookieToken(res);
+        return res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        return res.status(500).json({ message: 'Server error during logout' });
     }
 };
 

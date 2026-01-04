@@ -3,13 +3,14 @@ const router = express.Router();
 const vendorController = require('../controllers/vendorController');
 const upload = require('../middleware/upload');
 const { authenticateToken } = require('../middleware/auth');
+const { cacheMiddleware } = require('../config/redis');
 
 // Public routes
 // Get all vendor registrations (temp vendors)
 router.get('/api/vendor', vendorController.getAllVendorRegistrations);
 
-// Get all approved vendors
-router.get('/vendor', vendorController.getAllVendors);
+// Get all approved vendors (cached 5 min)
+router.get('/vendor', cacheMiddleware(300), vendorController.getAllVendors);
 
 // Get vendor count
 router.get('/vendor/count', vendorController.getVendorCount);
@@ -17,14 +18,14 @@ router.get('/vendor/count', vendorController.getVendorCount);
 // Get pending request count
 router.get('/vendor/countofpendingrequest', vendorController.getPendingRequestCount);
 
-// Get vendor details by ID
-router.get('/api/getdetails/vendor/:id', vendorController.getVendorDetails);
+// Get vendor details by ID (cached 5 min)
+router.get('/api/getdetails/vendor/:id', cacheMiddleware(300), vendorController.getVendorDetails);
 
-// Get professional details
-router.get('/profesionaldetails/:id', vendorController.getProfessionalDetails);
+// Get professional details (cached 5 min)
+router.get('/profesionaldetails/:id', cacheMiddleware(300), vendorController.getProfessionalDetails);
 
-// Get vendor category
-router.get('/api/categories/:id', vendorController.getVendorCategory);
+// Get vendor category (cached 10 min)
+router.get('/api/categories/:id', cacheMiddleware(600), vendorController.getVendorCategory);
 
 // Get vendor total views
 router.get('/api/vendor/:vendorId/totalviews', vendorController.getVendorTotalViews);

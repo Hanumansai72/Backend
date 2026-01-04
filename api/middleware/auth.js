@@ -14,10 +14,42 @@ const getJwtSecret = () => {
     return secret;
 };
 
+// Cookie configuration for production
+const getCookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    return {
+        httpOnly: true,           // Prevents XSS access to cookie
+        secure: isProduction,      // HTTPS only in production
+        sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
+        maxAge: maxAge,           // 7 days by default
+        path: '/'
+    };
+};
+
+/**
+ * Set auth token cookie
+ */
+const setCookieToken = (res, token, maxAge = 7 * 24 * 60 * 60 * 1000) => {
+    res.cookie('authToken', token, getCookieOptions(maxAge));
+};
+
+/**
+ * Clear auth token cookie
+ */
+const clearCookieToken = (res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('authToken', {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/'
+    });
+};
+
 /**
  * Generate JWT token
  */
-const generateToken = (payload, expiresIn = '24h') => {
+const generateToken = (payload, expiresIn = '7d') => {
     return jwt.sign(payload, getJwtSecret(), { expiresIn });
 };
 
@@ -33,11 +65,28 @@ const verifyToken = (token) => {
 };
 
 /**
+ * Get token from request (cookies first, then Authorization header)
+ */
+const getTokenFromRequest = (req) => {
+    // Check cookies first
+    if (req.cookies && req.cookies.authToken) {
+        return req.cookies.authToken;
+    }
+
+    // Fall back to Authorization header (for mobile apps, Postman, etc.)
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.split(' ')[1];
+    }
+
+    return null;
+};
+
+/**
  * Authentication middleware
  */
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = getTokenFromRequest(req);
 
     if (!token) {
         return res.status(401).json({ message: 'Access denied. No token provided.' });
@@ -73,8 +122,7 @@ const authorize = (...roles) => {
  * Optional authentication (doesn't fail if no token)
  */
 const optionalAuth = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = getTokenFromRequest(req);
 
     if (token) {
         const decoded = verifyToken(token);
@@ -91,5 +139,8 @@ module.exports = {
     verifyToken,
     authenticateToken,
     authorize,
-    optionalAuth
+    optionalAuth,
+    setCookieToken,
+    clearCookieToken,
+    getTokenFromRequest
 };

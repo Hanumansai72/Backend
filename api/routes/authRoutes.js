@@ -76,10 +76,8 @@ router.put('/forgetpassword',
     authController.forgetPassword
 );
 
-// Logout (simple no-op for token-based auth - client removes token)
-router.post('/logout', (req, res) => {
-    res.json({ message: 'Logged out successfully' });
-});
+// Logout (clears auth cookies)
+router.post('/logout', authController.logout);
 
 // Google login alias (without /customer suffix) -> redirects to customer login
 router.post('/google-login-customer', authLimiter, authController.googleLoginCustomer);

@@ -3,6 +3,7 @@ const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const compression = require('compression');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -71,6 +72,9 @@ app.use(cors({
 
 // Security headers
 app.use(helmet());
+
+// Cookie parser - must be before routes
+app.use(cookieParser());
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));

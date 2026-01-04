@@ -62,12 +62,12 @@ exports.getCartItems = async (req, res) => {
 };
 
 /**
- * Get cart item count for vendor
+ * Get cart item count for customer
  */
 exports.getCartCount = async (req, res) => {
     try {
-        const cartid = req.params.id;
-        const countcart = await CartItem.countDocuments({ Vendorid: cartid });
+        const customerId = req.params.id;
+        const countcart = await CartItem.countDocuments({ customerid: customerId });
         res.json({ count: countcart });
     } catch (err) {
         res.status(500).json({ error: err.message });
