@@ -4,20 +4,22 @@ let redisClient = null;
 
 /**
  * Initialize Redis client
+ * Completely disabled if REDIS_URL is not set or points to localhost
  */
 const initRedis = async () => {
     try {
-        // Only initialize if Redis URL is provided
-        if (!process.env.REDIS_URL) {
-            console.log('Redis URL not configured. Caching disabled.');
+        // Skip Redis if URL not configured or if it's localhost (for local development)
+        const redisUrl = process.env.REDIS_URL;
+        if (!redisUrl || redisUrl.includes('127.0.0.1') || redisUrl.includes('localhost')) {
+            console.log('Redis disabled (no remote URL configured). Caching disabled.');
             return null;
         }
 
         redisClient = redis.createClient({
-            url: process.env.REDIS_URL,
+            url: redisUrl,
             socket: {
                 reconnectStrategy: (retries) => {
-                    if (retries > 10) {
+                    if (retries > 3) {
                         console.error('Redis: Too many retries, giving up');
                         return new Error('Too many retries');
                     }
@@ -27,7 +29,7 @@ const initRedis = async () => {
         });
 
         redisClient.on('error', (err) => {
-            console.error('Redis Client Error:', err);
+            console.error('Redis Client Error:', err.message);
         });
 
         redisClient.on('connect', () => {
@@ -37,7 +39,8 @@ const initRedis = async () => {
         await redisClient.connect();
         return redisClient;
     } catch (error) {
-        console.error('Redis initialization failed:', error);
+        console.error('Redis initialization failed:', error.message);
+        redisClient = null;
         return null;
     }
 };
