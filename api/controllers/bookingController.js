@@ -9,7 +9,7 @@ const { sendEmail } = require('../services/emailService');
 exports.getBookingLocation = async (req, res) => {
     try {
         const id = req.params.id;
-        const booking_find = await booking_service.findOne({ customerid: id }).sort({ createdAt: -1 });
+        const booking_find = await booking_service.findOne({ customerid: id });
 
         if (!booking_find) return res.status(404).json({ message: 'No booking found' });
 
