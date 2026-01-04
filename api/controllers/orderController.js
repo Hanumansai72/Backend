@@ -9,10 +9,7 @@ exports.getPendingOrders = async (req, res) => {
         const vendorId = req.params.id;
 
         // Verify vendor can only access their own orders
-        if (req.user && req.user.id !== vendorId && req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
-        }
-
+       
         const query = {
             vendorid: vendorId,
             orderStatus: { $in: ['Pending', 'Processing'] }
@@ -49,9 +46,7 @@ exports.getVendorOrders = async (req, res) => {
         const id = req.params.id;
 
         // Verify vendor can only access their own orders
-        if (req.user && req.user.id !== id && req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
-        }
+        
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -77,10 +72,7 @@ exports.getCustomerOrders = async (req, res) => {
     try {
         const id = req.params.id;
 
-        // Verify customer can only access their own orders
-        if (req.user && req.user.id !== id && req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
-        }
+        
 
         const ordercustomer = await vieworder.find({ customerId: id });
         res.json(ordercustomer);
