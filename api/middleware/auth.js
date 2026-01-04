@@ -1,10 +1,24 @@
 const jwt = require('jsonwebtoken');
 
+// Get JWT secret with fallback for development
+const getJwtSecret = () => {
+    const secret = "Apnamestri";
+    if (!secret) {
+        // For development only - in production, JWT_SECRET must be set in Vercel
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('JWT_SECRET must be set in production environment. Add it to Vercel Environment Variables.');
+        }
+        console.warn('WARNING: JWT_SECRET not set. Using default for development only!');
+        return 'apna-mestri-dev-secret-key-do-not-use-in-production';
+    }
+    return secret;
+};
+
 /**
  * Generate JWT token
  */
 const generateToken = (payload, expiresIn = '24h') => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn });
+    return jwt.sign(payload, getJwtSecret(), { expiresIn });
 };
 
 /**
@@ -12,7 +26,7 @@ const generateToken = (payload, expiresIn = '24h') => {
  */
 const verifyToken = (token) => {
     try {
-        return jwt.verify(token, process.env.JWT_SECRET);
+        return jwt.verify(token, getJwtSecret());
     } catch (error) {
         return null;
     }
