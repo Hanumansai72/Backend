@@ -55,9 +55,6 @@ exports.getCartItems = async (req, res) => {
     try {
         const id = req.params.id;
         const usercarts = await CartItem.find({ customerid: id });
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
         res.json(usercarts);
     } catch (err) {
         res.status(500).json({ error: err.message });
