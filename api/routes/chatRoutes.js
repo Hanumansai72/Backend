@@ -20,4 +20,7 @@ router.get('/api/chat/messages/:conversationId', chatController.getMessages);
 // Get vendor conversations
 router.get('/api/chat/conversations/vendor/:vendorId', chatController.getVendorConversations);
 
+// Get user conversations (alias for inbox)
+router.get('/api/chat/conversations/user/:userId', chatController.getUserInbox);
+
 module.exports = router;

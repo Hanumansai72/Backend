@@ -41,6 +41,7 @@ app.set('trust proxy', 1);
 const allowedOrigins = [
   'https://www.apnamestri.com',
   'https://apnamestri.com',
+  'https://partner.apnamestri.com',
   'https://product-apna-mestri.vercel.app',
   'https://vendor-apna.vercel.app',
   'https://admin-apna-mestri.vercel.app',

@@ -24,7 +24,7 @@ exports.getAllProducts = async (req, res) => {
             products.map(async (product) => {
                 try {
                     const reviewCount = await revieworder.countDocuments({
-                        productId: mongoose.Types.ObjectId(product._id),
+                        productId: new mongoose.Types.ObjectId(product._id),
                     });
                     return { ...product, ProductReview: reviewCount };
                 } catch (err) {
