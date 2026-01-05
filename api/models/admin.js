@@ -25,7 +25,8 @@ const vendorSchema = new mongoose.Schema({
 
   Account_Number: {
     type:String,
-    unique:true
+    unique:true,
+    sparse: true
   },
   IFSC_Code: {
     type:String,

@@ -82,9 +82,7 @@ const getTokenFromRequest = (req) => {
     return null;
 };
 
-/**
- * Authentication middleware
- */
+
 const authenticateToken = (req, res, next) => {
     const token = getTokenFromRequest(req);
 
