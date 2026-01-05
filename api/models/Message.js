@@ -60,7 +60,7 @@ const messageSchema = new mongoose.Schema({
 // Validation: message or attachments must be present
 messageSchema.pre('validate', function (next) {
   if (!this.message && (!this.attachments || this.attachments.length === 0)) {
-    next(new Error('Message must have text content or attachments'));
+    return next(new Error('Message must have text content or attachments'));
   }
   next();
 });
