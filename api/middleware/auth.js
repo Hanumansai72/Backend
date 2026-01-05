@@ -100,23 +100,6 @@ const authenticateToken = (req, res, next) => {
 };
 
 /**
- * Role-based authorization middleware
- */
-const authorize = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
-
-        if (!roles.includes(req.user.role)) {
-            return res.status(403).json({ message: 'Forbidden. Insufficient permissions.' });
-        }
-
-        next();
-    };
-};
-
-/**
  * Optional authentication (doesn't fail if no token)
  */
 const optionalAuth = (req, res, next) => {
@@ -136,7 +119,6 @@ module.exports = {
     generateToken,
     verifyToken,
     authenticateToken,
-    authorize,
     optionalAuth,
     setCookieToken,
     clearCookieToken,

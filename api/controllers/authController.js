@@ -74,12 +74,13 @@ exports.vendorLogin = async (req, res) => {
         }
 
         const passwordMatch = await bcrypt.compare(password, vendor.Password);
+        
 
         if (passwordMatch) {
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: 'vendor'
+                role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
             });
 
             // Set HTTP-only cookie
@@ -118,7 +119,8 @@ exports.loginWithOtpVendor = async (req, res) => {
         const token = generateToken({
             id: vendor._id,
             email: vendor.Email_address,
-            role: 'vendor'
+            role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
+
         });
 
         // Set HTTP-only cookie
@@ -194,7 +196,8 @@ exports.googleLoginVendor = async (req, res) => {
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: 'vendor'
+                role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
+
             });
 
             // Set HTTP-only cookie

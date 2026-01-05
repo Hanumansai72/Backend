@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
+const { requireCustomer } = require('../middleware/Rolebased');
 
-// Protected routes - require authentication
+// Protected routes - require authentication AND customer role
 // Get user profile
-router.get('/myprofile/:id', authenticateToken, userController.getUserProfile);
+router.get('/myprofile/:id', authenticateToken, requireCustomer(), userController.getUserProfile);
 
 // Update user profile
-router.put('/myprofile/:id', authenticateToken, userController.updateUserProfile);
+router.put('/myprofile/:id', authenticateToken, requireCustomer(), userController.updateUserProfile);
 
 // Public routes
 // Create user profile (signup)
@@ -21,4 +22,3 @@ router.post('/fetch/userprofile', userController.loginUser);
 router.post('/customer/signup', userController.createUserProfile);
 
 module.exports = router;
-

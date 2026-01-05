@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
 const { authenticateToken } = require('../middleware/auth');
+const { requireProductVendor } = require('../middleware/Rolebased');
 const { cacheMiddleware } = require('../config/redis');
 
 // Public routes - Get all products (cached 3 min)
@@ -28,15 +29,14 @@ router.post('/updateview/:id', productController.updateProductView);
 // Get recent products
 router.post('/recent-products', productController.getRecentProducts);
 
-// Protected routes - require authentication
-// Add product
-router.post('/addproduct', authenticateToken, productController.addProduct);
+// Protected routes - require authentication AND Non-Technical vendor role
+// Add product (only Non-Technical vendors or admin can add products)
+router.post('/addproduct', authenticateToken, requireProductVendor(), productController.addProduct);
 
-// Update product
-router.put('/updatedetails/:productId', authenticateToken, productController.updateProduct);
+// Update product (only Non-Technical vendors or admin can update products)
+router.put('/updatedetails/:productId', authenticateToken, requireProductVendor(), productController.updateProduct);
 
-// Delete product
-router.delete('/delete/:id', authenticateToken, productController.deleteProduct);
+// Delete product (only Non-Technical vendors or admin can delete products)
+router.delete('/delete/:id', authenticateToken, requireProductVendor(), productController.deleteProduct);
 
 module.exports = router;
-
