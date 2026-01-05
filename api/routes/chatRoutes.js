@@ -5,22 +5,36 @@ const path = require('path');
 const fs = require('fs');
 const chatController = require('../controllers/chatController');
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads/chat');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Check if we're in a serverless environment (Vercel, AWS Lambda, etc.)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + '-' + file.originalname);
+// Configure multer storage based on environment
+let storage;
+
+if (isServerless) {
+    // Use memory storage for serverless (files uploaded directly to Cloudinary from frontend)
+    storage = multer.memoryStorage();
+} else {
+    // Use disk storage for local development
+    const uploadDir = path.join(__dirname, '../uploads/chat');
+    try {
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+    } catch (err) {
+        console.log('Could not create upload directory, using memory storage:', err.message);
     }
-});
+
+    storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, uploadDir);
+        },
+        filename: function (req, file, cb) {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, uniqueSuffix + '-' + file.originalname);
+        }
+    });
+}
 
 const fileFilter = (req, file, cb) => {
     // Allowed file types
