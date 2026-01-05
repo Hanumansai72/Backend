@@ -1,27 +1,31 @@
 const mongoose = require("mongoose");
 
 const tempVendorSchema = new mongoose.Schema({
-  Business_Name:{
-    
-    type:String,
-    unique:true
+  Business_Name: {
+    type: String,
+    unique: true,
+    sparse: true,
+    default: null
   },
-  
-  Owner_name: 
-    {
-    type:String,
-    unique:true
-  
+
+  Owner_name: {
+    type: String,
+    unique: true,
+    sparse: true,
+    default: null
   },
+
   Email_address: {
-    type:String,
-    required:true,
-    unique:true
+    type: String,
+    required: true,
+    unique: true
   },
 
   Phone_number: {
-    type:String,
-    unique:true
+    type: String,
+    unique: true,
+    sparse: true,
+    default: null
   },
   Business_address: String,
   Category: String,
@@ -34,15 +38,16 @@ const tempVendorSchema = new mongoose.Schema({
   Profile_Image: { type: String, default: "" }, // Single profile image
 
   Account_Number: {
-    type:String,
-    unique:true,
-  sparse: true
+    type: String,
+    unique: true,
+    sparse: true,
+    default: null
   },
   IFSC_Code: {
-    type:String,
-    unique:true,
-    sparse: true
-
+    type: String,
+    unique: true,
+    sparse: true,
+    default: null
   },
   Charge_Per_Hour_or_Day: String,
   Charge_Type: String, // <-- Added this field (e.g., Hourly/Daily)
@@ -61,11 +66,11 @@ const tempVendorSchema = new mongoose.Schema({
       default: [0, 0],
     },
   },
-  Verified:{
-    type:Boolean,
-    default:false
+  Verified: {
+    type: Boolean,
+    default: false
   },
-    description:String,
+  description: String,
 
 
   registrationDate: {
