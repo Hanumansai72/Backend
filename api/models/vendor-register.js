@@ -35,11 +35,14 @@ const tempVendorSchema = new mongoose.Schema({
 
   Account_Number: {
     type:String,
-    unique:true
+    unique:true,
+  sparse: true
   },
   IFSC_Code: {
     type:String,
-    unique:true
+    unique:true,
+    sparse: true
+
   },
   Charge_Per_Hour_or_Day: String,
   Charge_Type: String, // <-- Added this field (e.g., Hourly/Daily)
