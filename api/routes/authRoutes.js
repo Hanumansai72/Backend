@@ -55,16 +55,12 @@ router.post('/google-login/customer',
 // Send OTP
 router.post('/sendotp',
     otpLimiter,
-    [validationRules.email()],
-    handleValidationErrors,
     authController.sendOtp
 );
 
 // Verify OTP
 router.post('/verifyotp',
     authLimiter,
-    [validationRules.email(), validationRules.otp()],
-    handleValidationErrors,
     authController.verifyOtp
 );
 
