@@ -30,6 +30,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const userRoutes = require('./routes/userRoutes');
 const utilityRoutes = require('./routes/utilityRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 // App initialization
 const app = express();
@@ -129,6 +130,7 @@ app.use('/', reviewRoutes);
 app.use('/', projectRoutes);
 app.use('/', userRoutes);
 app.use('/', utilityRoutes);
+app.use('/', adminRoutes);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);
