@@ -74,13 +74,13 @@ exports.vendorLogin = async (req, res) => {
         }
 
         const passwordMatch = await bcrypt.compare(password, vendor.Password);
-        
+
 
         if (passwordMatch) {
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
+                role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
             });
 
             // Set HTTP-only cookie
@@ -119,7 +119,7 @@ exports.loginWithOtpVendor = async (req, res) => {
         const token = generateToken({
             id: vendor._id,
             email: vendor.Email_address,
-            role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
+            role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
 
         });
 
@@ -196,7 +196,7 @@ exports.googleLoginVendor = async (req, res) => {
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: vendor.Category=="Non-Technical" ? "Non-Technical" : "Technical"
+                role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
 
             });
 
@@ -271,8 +271,22 @@ exports.googleLoginCustomer = async (req, res) => {
         });
     } catch (err) {
         console.error('Google login error:', err);
+        let message = 'Google login failed';
+
+        // Handle MongoDB Duplicate Key Error (E11000)
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern || {})[0];
+            if (field === 'Phone_Number') {
+                message = 'A user with this phone number already exists.';
+            } else if (field === 'Emailaddress') {
+                message = 'A user with this email already exists.';
+            } else {
+                message = `Duplicate account information found (${field})`;
+            }
+        }
+
         res.status(500).json({
-            message: 'Google login failed',
+            message,
             error: err.message
         });
     }
