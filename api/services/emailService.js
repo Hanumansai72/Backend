@@ -1,23 +1,35 @@
-const transporter = require('../config/email');
+const Brevo = require('@getbrevo/brevo');
+
+// Initialize Brevo API client
+const apiInstance = new Brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
 /**
- * Send a generic email
+ * Send a generic email using Brevo API
  */
-const sendEmail = (email, name, htmlContents, subject) => {
-    const mailOption = {
-        from: '"Apna Mestri" <help@apnamestri.com>',
-        to: email,
-        subject: subject,
-        html: htmlContents,
-    };
-    return transporter.sendMail(mailOption);
+const sendEmail = async (email, name, htmlContents, subject) => {
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+
+  sendSmtpEmail.subject = subject;
+  sendSmtpEmail.htmlContent = htmlContents;
+  sendSmtpEmail.sender = { name: 'Apna Mestri', email: 'help@apnamestri.com' };
+  sendSmtpEmail.to = [{ email: email, name: name || 'Customer' }];
+
+  try {
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Brevo API Email sent:', result);
+    return result;
+  } catch (error) {
+    console.error('Brevo API Error:', error.response?.body || error.message);
+    throw error;
+  }
 };
 
 /**
- * Send OTP email
+ * Send OTP email using Brevo API
  */
-const sendOTP = (email, otp) => {
-    const htmlContent = `
+const sendOTP = async (email, otp) => {
+  const htmlContent = `
     <div style="font-family: Arial, sans-serif; color: #333;">
       <h2>OTP Verification - Apna Mestri</h2>
       <p>Hello,</p>
@@ -31,17 +43,27 @@ const sendOTP = (email, otp) => {
     </div>
   `;
 
-    const mailOptions = {
-        from: '"Apna Mestri" <help@apnamestri.com>',
-        to: email,
-        subject: 'Your OTP Code',
-        html: htmlContent,
-    };
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+  sendSmtpEmail.subject = 'Your OTP Code - Apna Mestri';
+  sendSmtpEmail.htmlContent = htmlContent;
+  sendSmtpEmail.sender = { name: 'Apna Mestri', email: 'help@apnamestri.com' };
+  sendSmtpEmail.to = [{ email: email }];
 
-    return transporter.sendMail(mailOptions);
+  try {
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('Brevo API OTP sent to:', email, 'MessageId:', result?.messageId);
+    return result;
+  } catch (error) {
+    console.error('Brevo API OTP Error:', {
+      status: error.response?.status,
+      message: error.response?.body?.message || error.message,
+      code: error.response?.body?.code
+    });
+    throw error;
+  }
 };
 
 module.exports = {
-    sendEmail,
-    sendOTP
+  sendEmail,
+  sendOTP
 };
