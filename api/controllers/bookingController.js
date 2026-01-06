@@ -48,7 +48,8 @@ exports.getJobHistory = async (req, res) => {
         const databse1 = await booking_service.find({ Vendorid: id, status: 'Completed' });
         res.json(databse1);
     } catch (err) {
-        res.json(err);
+        console.error('Error fetching job history:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -64,7 +65,8 @@ exports.getNewJobs = async (req, res) => {
         });
         res.json(findingnewjob);
     } catch (err) {
-        res.json(err);
+        console.error('Error fetching new jobs:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -82,7 +84,8 @@ exports.getServiceCount = async (req, res) => {
 
         res.json({ count1: count1, count2: count2, count3: count3 });
     } catch (err) {
-        console.log(err);
+        console.error('Error fetching service count:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -95,7 +98,8 @@ exports.getServiceJobById = async (req, res) => {
         const findingserviceid = await booking_service.findById(id);
         res.json(findingserviceid);
     } catch (err) {
-        res.json(err);
+        console.error('Error fetching service job:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -108,7 +112,8 @@ exports.getCartServices = async (req, res) => {
         const cartservice = await booking_service.find({ customerid: id });
         res.json(cartservice);
     } catch (err) {
-        console.log(err);
+        console.error('Error fetching cart services:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -257,6 +262,16 @@ exports.createBooking = async (req, res) => {
 exports.updateBookingStatus = async (req, res) => {
     const { status } = req.body;
     try {
+        // Verify ownership - vendor can only update their own bookings
+        const booking = await booking_service.findById(req.params.id);
+        if (!booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        if (req.user.role !== 'admin' && booking.Vendorid?.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Access denied. You can only update your own bookings.' });
+        }
+
         const updatedBooking = await booking_service.findByIdAndUpdate(
             req.params.id,
             { status },
@@ -264,6 +279,7 @@ exports.updateBookingStatus = async (req, res) => {
         );
         res.json(updatedBooking);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to update booking status' });
+        console.error('Error updating booking status:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };

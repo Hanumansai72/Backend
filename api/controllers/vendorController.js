@@ -131,10 +131,11 @@ exports.getProfessionalDetails = async (req, res) => {
             const find_details = await Vendor.findById(ids);
             res.json(find_details);
         } else {
-            console.log('please provide the id to fetch the user profile');
+            return res.status(400).json({ message: 'Vendor ID is required' });
         }
     } catch (err) {
-        res.json(err);
+        console.error('Error fetching professional details:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 exports.Getjobhistory = async (req, res) => {

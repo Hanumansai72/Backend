@@ -10,8 +10,10 @@ exports.getAllProducts = async (req, res) => {
     const { category } = req.query;
 
     try {
+        // Escape regex special characters to prevent injection
+        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const query = category
-            ? { ProductCategory: { $regex: new RegExp(category, 'i') } }
+            ? { ProductCategory: { $regex: new RegExp(escapeRegex(category), 'i') } }
             : {};
 
         const products = await productdata.find(query).lean();
@@ -221,8 +223,8 @@ exports.viewStore = async (req, res) => {
         const product_id = await productdata.find({ Vendor: id });
         res.json(product_id);
     } catch (err) {
-        res.json(err);
-        console.log(err);
+        console.error('Error viewing store:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -296,6 +298,16 @@ exports.updateProduct = async (req, res) => {
     } = req.body;
 
     try {
+        // Verify ownership - vendor can only update their own products
+        const product = await productdata.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (req.user.role !== 'admin' && product.Vendor.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Access denied. You can only update your own products.' });
+        }
+
         const updatedProduct = await productdata.findByIdAndUpdate(
             productId,
             {
@@ -311,10 +323,6 @@ exports.updateProduct = async (req, res) => {
             { new: true }
         );
 
-        if (!updatedProduct) {
-            return res.status(404).json({ message: 'Product not found' });
-        }
-
         res.json({ message: 'Product updated successfully', product: updatedProduct });
     } catch (err) {
         console.error('Error updating product:', err);
@@ -329,15 +337,20 @@ exports.deleteProduct = async (req, res) => {
     const productId = req.params.id;
 
     try {
-        const deletedProduct = await productdata.findByIdAndDelete(productId);
-
-        if (!deletedProduct) {
+        // Verify ownership - vendor can only delete their own products
+        const product = await productdata.findById(productId);
+        if (!product) {
             return res.status(404).json({ message: 'Product not found' });
         }
 
+        if (req.user.role !== 'admin' && product.Vendor.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Access denied. You can only delete your own products.' });
+        }
+
+        await productdata.findByIdAndDelete(productId);
         res.json({ message: 'Product deleted successfully' });
     } catch (err) {
         console.error('Error deleting product:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };

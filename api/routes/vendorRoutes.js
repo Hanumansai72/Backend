@@ -48,10 +48,10 @@ router.post(
 );
 
 // Add vendor (admin only)
-router.post('/add_vendor', authenticateToken, vendorController.addVendor);
+router.post('/add_vendor', authenticateToken, requireAdmin(), vendorController.addVendor);
 
 // Approve vendor (admin only)
-router.post('/postdatabase/:id', authenticateToken, vendorController.approveVendor);
+router.post('/postdatabase/:id', authenticateToken, requireAdmin(), vendorController.approveVendor);
 
 // Check temp vendor
 router.post('/checktempvendor', vendorController.checkTempVendor);

@@ -9,7 +9,7 @@ exports.getPendingOrders = async (req, res) => {
         const vendorId = req.params.id;
 
         // Verify vendor can only access their own orders
-       
+
         const query = {
             vendorid: vendorId,
             orderStatus: { $in: ['Pending', 'Processing'] }
@@ -46,7 +46,7 @@ exports.getVendorOrders = async (req, res) => {
         const id = req.params.id;
 
         // Verify vendor can only access their own orders
-        
+
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -72,7 +72,7 @@ exports.getCustomerOrders = async (req, res) => {
     try {
         const id = req.params.id;
 
-        
+
 
         const ordercustomer = await vieworder.find({ customerId: id });
         res.json(ordercustomer);
@@ -91,7 +91,8 @@ exports.getRecentOrders = async (req, res) => {
         const result = await vieworder.find({ orderedAt: { $gte: date } });
         res.json(result);
     } catch (err) {
-        console.log(err);
+        console.error('Error fetching recent orders:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -118,15 +119,21 @@ exports.cancelOrder = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Verify ownership - customer can only cancel their own orders
+        const order = await vieworder.findById(id);
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        if (req.user.role !== 'admin' && order.customerId?.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'Access denied. You can only cancel your own orders.' });
+        }
+
         const updateCancel = await vieworder.findByIdAndUpdate(
             id,
             { orderStatus: 'Cancelled' },
             { new: true }
         );
-
-        if (!updateCancel) {
-            return res.status(404).json({ message: 'Order not found' });
-        }
 
         res.status(200).json({
             message: 'Order status updated to Cancelled',
