@@ -1,15 +1,22 @@
-const Brevo = require('@getbrevo/brevo');
+const SibApiV3Sdk = require('@getbrevo/brevo');
 
 // Initialize Brevo API client
-const apiInstance = new Brevo.TransactionalEmailsApi();
-apiInstance.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+const initApiInstance = () => {
+  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+  const apiKey = apiInstance.authentications['apiKey'];
+  apiKey.apiKey = process.env.BREVO_API_KEY;
+
+  console.log('Brevo API Key configured:', process.env.BREVO_API_KEY ? 'SET' : 'NOT SET');
+  return apiInstance;
+};
 
 /**
  * Send a generic email using Brevo API
  */
 const sendEmail = async (email, name, htmlContents, subject) => {
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+  const apiInstance = initApiInstance();
 
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = htmlContents;
   sendSmtpEmail.sender = { name: 'Apna Mestri', email: 'help@apnamestri.com' };
@@ -29,6 +36,8 @@ const sendEmail = async (email, name, htmlContents, subject) => {
  * Send OTP email using Brevo API
  */
 const sendOTP = async (email, otp) => {
+  const apiInstance = initApiInstance();
+
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; color: #333;">
       <h2>OTP Verification - Apna Mestri</h2>
@@ -43,7 +52,7 @@ const sendOTP = async (email, otp) => {
     </div>
   `;
 
-  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
   sendSmtpEmail.subject = 'Your OTP Code - Apna Mestri';
   sendSmtpEmail.htmlContent = htmlContent;
   sendSmtpEmail.sender = { name: 'Apna Mestri', email: 'help@apnamestri.com' };
@@ -56,8 +65,8 @@ const sendOTP = async (email, otp) => {
   } catch (error) {
     console.error('Brevo API OTP Error:', {
       status: error.response?.status,
-      message: error.response?.body?.message || error.message,
-      code: error.response?.body?.code
+      body: error.response?.body,
+      message: error.message
     });
     throw error;
   }
