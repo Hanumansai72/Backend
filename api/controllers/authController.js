@@ -327,9 +327,35 @@ exports.sendOtp = async (req, res) => {
             expiresAt: new Date(Date.now() + 10 * 60 * 1000)
         });
         await newOtp.save();
+        console.log(`OTP ${otpCode} saved for ${Email}`);
 
-        // Send the OTP email
-        await sendOTP(Email, otpCode);
+        // Send the OTP email with detailed error logging
+        try {
+            console.log('Attempting to send OTP email to:', Email);
+            console.log('SMTP Config:', {
+                host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+                port: process.env.SMTP_PORT || 587,
+                user: process.env.SMTP_USER ? 'SET' : 'NOT SET',
+                pass: process.env.SMTP_PASS ? 'SET' : 'NOT SET'
+            });
+
+            const emailResult = await sendOTP(Email, otpCode);
+            console.log('Email sent successfully:', emailResult);
+        } catch (emailError) {
+            console.error('SMTP Error Details:', {
+                code: emailError.code,
+                command: emailError.command,
+                response: emailError.response,
+                responseCode: emailError.responseCode,
+                message: emailError.message
+            });
+            // OTP is saved, but email failed - still return success with warning
+            return res.status(200).json({
+                message: 'OTP generated but email delivery failed',
+                otp: process.env.NODE_ENV !== 'production' ? otpCode : undefined,
+                emailError: emailError.message
+            });
+        }
 
         res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
