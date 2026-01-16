@@ -3,6 +3,8 @@ const productwallet = require('../models/productwallet');
 const booking_service = require('../models/servicebooking');
 const vieworder = require('../models/productorders');
 const { addTransaction, addProductTransaction } = require('../services/walletService');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 /**
  * Get vendor wallet (for service bookings)
@@ -36,9 +38,16 @@ exports.getVendorWallet = async (req, res) => {
             }
         }
 
-        res.json(wallet);
+        res.json({ success: true, wallet });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch vendor wallet',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -80,9 +89,16 @@ exports.getProductWallet = async (req, res) => {
             }
         }
 
-        res.json(wallet);
+        res.json({ success: true, wallet });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch product wallet',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };

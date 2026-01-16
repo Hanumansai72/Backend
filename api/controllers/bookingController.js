@@ -2,6 +2,8 @@ const booking_service = require('../models/servicebooking');
 const Vendor = require('../models/admin');
 const Wallet = require('../models/wallet');
 const { sendEmail } = require('../services/emailService');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 /**
  * Get booking location details
@@ -11,14 +13,31 @@ exports.getBookingLocation = async (req, res) => {
         const id = req.params.id;
         const booking_find = await booking_service.findOne({ customerid: id });
 
-        if (!booking_find) return res.status(404).json({ message: 'No booking found' });
+        if (!booking_find) {
+            return res.status(404).json(
+                new ErrorResponse(
+                    ERROR_CODES.RESOURCE_NOT_FOUND,
+                    'No booking found',
+                    {},
+                    404
+                ).toJSON()
+            );
+        }
 
         res.json({
+            success: true,
             address: booking_find.address,
             customer: booking_find.customer
         });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch booking', details: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch booking',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -186,7 +205,14 @@ exports.createBooking = async (req, res) => {
         const idfind = await Vendor.findById(Vendorid);
         const vendorprice = idfind.Charge_Per_Hour_or_Day;
         if (!idfind) {
-            return res.status(404).json({ message: 'Vendor not found' });
+            return res.status(404).json(
+                new ErrorResponse(
+                    ERROR_CODES.RESOURCE_NOT_FOUND,
+                    'Vendor not found',
+                    {},
+                    404
+                ).toJSON()
+            );
         }
 
         const vendoremail = idfind.Email_address;
@@ -249,10 +275,17 @@ exports.createBooking = async (req, res) => {
             console.log('Failed to send email', err);
         }
 
-        res.status(200).json({ message: 'Booking saved successfully', booking, vendorprice });
+        res.status(200).json({ success: true, message: 'Booking saved successfully', booking, vendorprice });
     } catch (err) {
         console.error('Booking Save Error:', err);
-        res.status(500).json({ error: 'Failed to save booking' });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to save booking',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -265,11 +298,25 @@ exports.updateBookingStatus = async (req, res) => {
         // Verify ownership - vendor can only update their own bookings
         const booking = await booking_service.findById(req.params.id);
         if (!booking) {
-            return res.status(404).json({ message: 'Booking not found' });
+            return res.status(404).json(
+                new ErrorResponse(
+                    ERROR_CODES.RESOURCE_NOT_FOUND,
+                    'Booking not found',
+                    {},
+                    404
+                ).toJSON()
+            );
         }
 
         if (req.user.role !== 'admin' && booking.Vendorid?.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Access denied. You can only update your own bookings.' });
+            return res.status(403).json(
+                new ErrorResponse(
+                    ERROR_CODES.FORBIDDEN,
+                    'Access denied. You can only update your own bookings',
+                    {},
+                    403
+                ).toJSON()
+            );
         }
 
         const updatedBooking = await booking_service.findByIdAndUpdate(
@@ -277,9 +324,16 @@ exports.updateBookingStatus = async (req, res) => {
             { status },
             { new: true }
         );
-        res.json(updatedBooking);
+        res.json({ success: true, booking: updatedBooking });
     } catch (err) {
         console.error('Error updating booking status:', err);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to update booking status',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };

@@ -1,5 +1,7 @@
 const CartItem = require('../models/cart');
 const mongoose = require('mongoose');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 /**
  * Add item to cart
@@ -17,15 +19,36 @@ exports.addToCart = async (req, res) => {
     } = req.body;
 
     if (!customerid || !mongoose.Types.ObjectId.isValid(customerid)) {
-        return res.status(400).json({ message: 'Invalid or missing customerid' });
+        return res.status(400).json(
+            new ErrorResponse(
+                ERROR_CODES.VALIDATION_ERROR,
+                'Invalid or missing customer ID',
+                { field: 'customerid' },
+                400
+            ).toJSON()
+        );
     }
 
     if (!Vendorid || !mongoose.Types.ObjectId.isValid(Vendorid)) {
-        return res.status(400).json({ message: 'Invalid or missing Vendorid' });
+        return res.status(400).json(
+            new ErrorResponse(
+                ERROR_CODES.VALIDATION_ERROR,
+                'Invalid or missing vendor ID',
+                { field: 'Vendorid' },
+                400
+            ).toJSON()
+        );
     }
 
     if (!producturl || !productname || !productQuantity || !productprice) {
-        return res.status(400).json({ message: 'Missing required product fields' });
+        return res.status(400).json(
+            new ErrorResponse(
+                ERROR_CODES.VALIDATION_ERROR,
+                'Missing required product fields',
+                { required: ['producturl', 'productname', 'productQuantity', 'productprice'] },
+                400
+            ).toJSON()
+        );
     }
 
     try {
@@ -41,10 +64,17 @@ exports.addToCart = async (req, res) => {
         });
 
         const savedItem = await cartItem.save();
-        res.status(201).json({ message: 'Added to cart', cartItem: savedItem });
+        res.status(201).json({ success: true, message: 'Added to cart', cartItem: savedItem });
     } catch (error) {
         console.error('Failed to add to cart:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to add item to cart',
+                { error: error.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -55,9 +85,16 @@ exports.getCartItems = async (req, res) => {
     try {
         const id = req.params.id;
         const usercarts = await CartItem.find({ customerid: id });
-        res.json(usercarts);
+        res.json({ success: true, items: usercarts, count: usercarts.length });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch cart items',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -68,9 +105,16 @@ exports.getCartCount = async (req, res) => {
     try {
         const customerId = req.params.id;
         const countcart = await CartItem.countDocuments({ customerid: customerId });
-        res.json({ count: countcart });
+        res.json({ success: true, count: countcart });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to get cart count',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -85,12 +129,26 @@ exports.deleteCartItem = async (req, res) => {
         });
 
         if (!deletedItem) {
-            return res.status(404).json({ message: 'Cart item not found' });
+            return res.status(404).json(
+                new ErrorResponse(
+                    ERROR_CODES.RESOURCE_NOT_FOUND,
+                    'Cart item not found',
+                    { itemId },
+                    404
+                ).toJSON()
+            );
         }
 
-        res.status(200).json({ message: 'Item removed from cart' });
+        res.status(200).json({ success: true, message: 'Item removed from cart' });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to remove item from cart',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };

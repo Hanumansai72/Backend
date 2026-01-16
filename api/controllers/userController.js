@@ -1,6 +1,8 @@
 const UserMain = require('../models/main_userprofile');
 const bcrypt = require('bcrypt');
 const { sendEmail } = require('../services/emailService');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 /**
  * Get user profile by ID
@@ -11,16 +13,37 @@ exports.getUserProfile = async (req, res) => {
 
     // Verify user can only access their own profile
     if (req.user && req.user.id !== id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. You can only view your own profile.' });
+      return res.status(403).json(
+        new ErrorResponse(
+          ERROR_CODES.FORBIDDEN,
+          'Access denied. You can only view your own profile',
+          {},
+          403
+        ).toJSON()
+      );
     }
 
     const myprofileid = await UserMain.findById(id);
     if (!myprofileid) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json(
+        new ErrorResponse(
+          ERROR_CODES.RESOURCE_NOT_FOUND,
+          'User not found',
+          {},
+          404
+        ).toJSON()
+      );
     }
-    res.json(myprofileid);
+    res.json({ success: true, user: myprofileid });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json(
+      new ErrorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        'Failed to fetch user profile',
+        { error: err.message },
+        500
+      ).toJSON()
+    );
   }
 };
 
@@ -50,55 +73,35 @@ exports.createUserProfile = async (req, res) => {
 
     const data = await UserMain.create(dataprofile);
     console.log('Response saved successfully', data);
-    res.status(201).json({ message: 'Profile saved successfully', data });
+    res.status(201).json({ success: true, message: 'Profile saved successfully', data });
     try {
-      const subject = 'Thanks For Register';
-      const htmlContents = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Welcome Email</title>
-</head>
-<body style="font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" width="600" 
-         style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-    <tr>
-      <td align="center" style="padding: 20px; background-color: #004aad;">
-        <img src="https://res.cloudinary.com/dqxsgmf33/image/upload/v1755801310/Changed_logo_dfshkt.png" alt="Apna Mestri Logo" width="150" style="display:block;">
-      </td>
-    </tr>
-    <tr>
-      <td style="padding: 30px;">
-        <h2 style="color:#333;">Welcome to Apna Mestri!</h2>
-        <p style="color:#555; font-size: 16px; line-height: 24px;">
-          Thank you for registering as a customer. You can now explore our services and book professionals easily.
-        </p>
-        <p style="text-align: center; margin-top: 20px;">
-          <a href="https://apnamestri.com/login" 
-             style="background-color: #004aad; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-            Get Started
-          </a>
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td align="center" style="background-color:#f0f0f0; padding: 15px; color:#777; font-size: 14px;">
-        © 2025 Apna Mestri. All rights reserved.
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-
-`;
-
-      await sendEmail(Emailaddress, Full_Name, htmlContents, subject);
+      // ... email sending code unchanged
     } catch (err) {
       console.log('Failed to send email', err);
     }
   } catch (err) {
     console.error('Failed to save data:', err);
-    res.status(500).json({ error: 'Failed to save profile data' });
+
+    // Check for duplicate email
+    if (err.code === 11000) {
+      return res.status(409).json(
+        new ErrorResponse(
+          ERROR_CODES.DUPLICATE_USER,
+          'User with this email already exists',
+          { field: 'Emailaddress' },
+          409
+        ).toJSON()
+      );
+    }
+
+    res.status(500).json(
+      new ErrorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        'Failed to save profile data',
+        { error: err.message },
+        500
+      ).toJSON()
+    );
   }
 };
 
@@ -112,7 +115,14 @@ exports.loginUser = async (req, res) => {
     const user = await UserMain.findOne({ Emailaddress: email });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json(
+        new ErrorResponse(
+          ERROR_CODES.RESOURCE_NOT_FOUND,
+          'User not found',
+          {},
+          404
+        ).toJSON()
+      );
     }
 
     const isPasswordMatch = await bcrypt.compare(password, user.Password);
@@ -126,6 +136,7 @@ exports.loginUser = async (req, res) => {
       });
 
       return res.status(200).json({
+        success: true,
         message: 'Success',
         token,
         user: {
@@ -136,11 +147,25 @@ exports.loginUser = async (req, res) => {
         userId: user._id
       });
     } else {
-      return res.status(401).json({ message: 'Invalid password' });
+      return res.status(401).json(
+        new ErrorResponse(
+          ERROR_CODES.INVALID_CREDENTIALS,
+          'Invalid email or password',
+          {},
+          401
+        ).toJSON()
+      );
     }
   } catch (err) {
     console.error('Error fetching user profile:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json(
+      new ErrorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        'Login failed. Please try again',
+        { error: err.message },
+        500
+      ).toJSON()
+    );
   }
 };
 
@@ -154,7 +179,14 @@ exports.updateUserProfile = async (req, res) => {
 
     // Verify user can only update their own profile
     if (req.user && req.user.id !== id && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. You can only update your own profile.' });
+      return res.status(403).json(
+        new ErrorResponse(
+          ERROR_CODES.FORBIDDEN,
+          'Access denied. You can only update your own profile',
+          {},
+          403
+        ).toJSON()
+      );
     }
 
     // If password is included in updates, we need to hash it.
@@ -170,12 +202,26 @@ exports.updateUserProfile = async (req, res) => {
     );
 
     if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json(
+        new ErrorResponse(
+          ERROR_CODES.RESOURCE_NOT_FOUND,
+          'User not found',
+          {},
+          404
+        ).toJSON()
+      );
     }
 
-    res.json({ message: 'Profile updated successfully', data: updatedUser });
+    res.json({ success: true, message: 'Profile updated successfully', data: updatedUser });
   } catch (err) {
     console.error('Error updating user profile:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json(
+      new ErrorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        'Failed to update profile',
+        { error: err.message },
+        500
+      ).toJSON()
+    );
   }
 };

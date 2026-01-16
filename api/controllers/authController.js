@@ -5,6 +5,8 @@ const UserMain = require('../models/main_userprofile');
 const otpsender = require('../models/otpschema');
 const { sendOTP } = require('../services/emailService');
 const { generateToken, setCookieToken, clearCookieToken } = require('../middleware/auth');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 // Admin Login Schema
 const AdminLoginSchema = new mongoose.Schema({
@@ -27,7 +29,14 @@ exports.adminLogin = async (req, res) => {
         const user = await AdminLogin.findOne({ 'login.email': email });
 
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json(
+                new ErrorResponse(
+                    ERROR_CODES.INVALID_CREDENTIALS,
+                    'Invalid email or password',
+                    {},
+                    401
+                ).toJSON()
+            );
         }
 
         // Use bcrypt to compare passwords
@@ -52,11 +61,25 @@ exports.adminLogin = async (req, res) => {
                 }
             });
         } else {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json(
+                new ErrorResponse(
+                    ERROR_CODES.INVALID_CREDENTIALS,
+                    'Invalid email or password',
+                    {},
+                    401
+                ).toJSON()
+            );
         }
     } catch (err) {
         console.error('Login error:', err);
-        return res.status(500).json({ message: 'Server error' });
+        return res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Login failed. Please try again later',
+                {},
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -70,7 +93,14 @@ exports.vendorLogin = async (req, res) => {
         const vendor = await Vendor.findOne({ Email_address: username });
 
         if (!vendor) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json(
+                new ErrorResponse(
+                    ERROR_CODES.INVALID_CREDENTIALS,
+                    'Invalid email or password',
+                    {},
+                    401
+                ).toJSON()
+            );
         }
 
         const passwordMatch = await bcrypt.compare(password, vendor.Password);
@@ -103,11 +133,25 @@ exports.vendorLogin = async (req, res) => {
                 }
             });
         } else {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json(
+                new ErrorResponse(
+                    ERROR_CODES.INVALID_CREDENTIALS,
+                    'Invalid email or password',
+                    {},
+                    401
+                ).toJSON()
+            );
         }
     } catch (err) {
         console.error('Login error:', err);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Login failed. Please try again later',
+                {},
+                500
+            ).toJSON()
+        );
     }
 };
 
