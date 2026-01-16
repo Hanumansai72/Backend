@@ -49,10 +49,30 @@ exports.requireAdmin = () => {
 };
 
 /**
- * Require Non-Technical vendor (for product routes)
+ * Require Non-Technical vendor OR explicit 'product' role (for product routes)
  */
 exports.requireProductVendor = () => {
-  return exports.requireRole(['Non-Technical', 'admin']);
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Check for product role OR Non-Technical OR admin
+    const hasProductAccess =
+      req.user.role === 'product' ||
+      req.user.role === 'Non-Technical' ||
+      req.user.role === 'admin';
+
+    if (!hasProductAccess) {
+      return res.status(403).json({
+        message: "Access denied. Product role required.",
+        requiredRoles: ['product', 'Non-Technical', 'admin'],
+        yourRole: req.user.role || 'none'
+      });
+    }
+
+    next();
+  };
 };
 
 /**

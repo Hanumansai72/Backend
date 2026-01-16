@@ -339,13 +339,20 @@ exports.registerVendor = async (req, res) => {
             req.files['productImages']?.map((file) => file.path) || [];
         const Profile_Image = req.files['profileImage']?.[0]?.path || '';
 
+        // SERVER-SIDE ROLE ASSIGNMENT (cannot be manipulated by frontend)
+        // Determine vendor role based on Category/selectedTab
+        let vendorRole = 'Technical'; // Default
+        if (req.body.selectedTab === 'product' || Category === 'Non-Technical' || Category === 'Product') {
+            vendorRole = 'product'; // Product vendor role
+        }
+
         const vendor = new TempVendor({
             Business_Name,
             Owner_name,
             Email_address,
             Phone_number,
             Business_address,
-            Category,
+            Category: vendorRole === 'product' ? 'Non-Technical' : Category, // Normalize category
             Sub_Category: Array.isArray(Sub_Category)
                 ? Sub_Category
                 : [Sub_Category],
@@ -362,6 +369,7 @@ exports.registerVendor = async (req, res) => {
             Charge_Per_Hour_or_Day,
             description,
             isGoogleSignup: isGoogleSignup || false,
+            role: vendorRole, // NEW: Explicit role field
         });
 
         await vendor.save();
@@ -494,7 +502,8 @@ exports.approveVendor = async (req, res) => {
             IFSC_Code: vendor.IFSC_Code || '',
             Charge_Per_Hour_or_Day: vendor.Charge_Per_Hour_or_Day || '',
             Charge_Type: vendor.Charge_Type || '',
-            description: vendor.description
+            description: vendor.description,
+            role: vendor.role || (vendor.Category === 'Non-Technical' ? 'product' : 'Technical') // Preserve or set role
         };
 
         const finalVendor = new Vendor(newVendorData);
