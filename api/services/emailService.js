@@ -32,10 +32,9 @@ const sendEmail = async (email, name, htmlContents, subject) => {
   }
 };
 
-/**
- * Send OTP email using Brevo API
- */
+
 const sendOTP = async (email, otp) => {
+  s
   const apiInstance = initApiInstance();
 
   const htmlContent = `

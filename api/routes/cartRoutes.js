@@ -15,6 +15,6 @@ router.get('/carts/:id', authenticateToken, requireCustomer(), cartController.ge
 router.get('/cart/:id/count', authenticateToken, requireCustomer(), cartController.getCartCount);
 
 // Delete cart item
-router.delete('/delete/:itemId', authenticateToken, requireCustomer(), cartController.deleteCartItem);
+router.delete('/cart/delete/:itemId', authenticateToken, requireCustomer(), cartController.deleteCartItem);
 
 module.exports = router;
