@@ -77,10 +77,13 @@ exports.vendorLogin = async (req, res) => {
 
 
         if (passwordMatch) {
+            // CRITICAL: Use vendor.role if it exists, otherwise fallback to Category
+            const vendorRole = vendor.role || (vendor.Category == "Non-Technical" ? "product" : "Technical");
+
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
+                role: vendorRole
             });
 
             // Set HTTP-only cookie
@@ -90,11 +93,13 @@ exports.vendorLogin = async (req, res) => {
                 message: 'Success',
                 token, // Still return token for backward compatibility
                 vendorId: vendor._id,
+                role: vendorRole, // Return role for frontend routing
                 vendor: {
                     id: vendor._id,
                     businessName: vendor.Business_Name,
                     ownerName: vendor.Owner_name,
-                    email: vendor.Email_address
+                    email: vendor.Email_address,
+                    role: vendorRole
                 }
             });
         } else {
@@ -116,11 +121,13 @@ exports.loginWithOtpVendor = async (req, res) => {
             return res.json({ message: 'User not found' });
         }
 
+        // Use vendor.role if it exists
+        const vendorRole = vendor.role || (vendor.Category == "Non-Technical" ? "product" : "Technical");
+
         const token = generateToken({
             id: vendor._id,
             email: vendor.Email_address,
-            role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
-
+            role: vendorRole
         });
 
         // Set HTTP-only cookie
@@ -130,11 +137,13 @@ exports.loginWithOtpVendor = async (req, res) => {
             message: 'Success',
             token, // Still return token for backward compatibility
             vendorId: vendor._id,
+            role: vendorRole,
             vendor: {
                 id: vendor._id,
                 businessName: vendor.Business_Name,
                 ownerName: vendor.Owner_name,
-                email: vendor.Email_address
+                email: vendor.Email_address,
+                role: vendorRole
             }
         });
     } catch (err) {
@@ -193,11 +202,13 @@ exports.googleLoginVendor = async (req, res) => {
         const tempVendor = await TempVendor.findOne({ Email_address: email });
 
         if (vendor) {
+            // Use vendor.role if it exists
+            const vendorRole = vendor.role || (vendor.Category == "Non-Technical" ? "product" : "Technical");
+
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: vendor.Category == "Non-Technical" ? "Non-Technical" : "Technical"
-
+                role: vendorRole
             });
 
             // Set HTTP-only cookie
@@ -207,11 +218,13 @@ exports.googleLoginVendor = async (req, res) => {
                 message: 'Success',
                 token, // Still return token for backward compatibility
                 vendorId: vendor._id,
+                role: vendorRole,
                 vendor: {
                     id: vendor._id,
                     businessName: vendor.Business_Name,
                     ownerName: vendor.Owner_name,
-                    email: vendor.Email_address
+                    email: vendor.Email_address,
+                    role: vendorRole
                 }
             });
         } else if (tempVendor) {
