@@ -58,16 +58,19 @@ exports.requireProductVendor = () => {
     }
 
     // Check for product role OR Non-Technical OR admin
+    // Also check Category as fallback for backward compatibility (before migration)
     const hasProductAccess =
       req.user.role === 'product' ||
       req.user.role === 'Non-Technical' ||
-      req.user.role === 'admin';
+      req.user.role === 'admin' ||
+      req.user.Category === 'Non-Technical' ||  // Fallback: check Category from JWT
+      req.user.category === 'Non-Technical';    // Fallback: lowercase variant
 
     if (!hasProductAccess) {
       return res.status(403).json({
         message: "Access denied. Product role required.",
         requiredRoles: ['product', 'Non-Technical', 'admin'],
-        yourRole: req.user.role || 'none'
+        yourRole: req.user.role || req.user.Category || 'none'
       });
     }
 

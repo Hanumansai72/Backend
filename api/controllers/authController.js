@@ -113,7 +113,8 @@ exports.vendorLogin = async (req, res) => {
             const token = generateToken({
                 id: vendor._id,
                 email: vendor.Email_address,
-                role: vendorRole
+                role: vendorRole,
+                Category: vendor.Category  // Include Category for backward compatibility
             });
 
             // Set HTTP-only cookie
