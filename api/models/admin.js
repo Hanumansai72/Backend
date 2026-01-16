@@ -18,6 +18,14 @@ const vendorSchema = new mongoose.Schema({
   Business_address: String,
   Category: String,
   Sub_Category: [String],
+
+  // Role field for access control (product vendor vs service vendor)
+  role: {
+    type: String,
+    enum: ['product', 'Technical', 'admin'],
+    default: 'Technical',
+  },
+
   Tax_ID: String,
   ID_Type: String,
   Password: String,
