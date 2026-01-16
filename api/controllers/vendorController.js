@@ -408,10 +408,61 @@ exports.registerVendor = async (req, res) => {
             console.error('Email sending failed:', mailErr);
         }
 
-        res.json({ message: 'Registration successful' });
+        res.json({ success: true, message: 'Registration successful' });
     } catch (err) {
         console.error('Error during registration:', err);
-        res.status(500).json({ error: 'Server error during registration' });
+
+        // Handle Mongoose validation errors
+        if (err.name === 'ValidationError') {
+            const validationErrors = {};
+            const missingFields = [];
+
+            for (const field in err.errors) {
+                validationErrors[field] = err.errors[field].message;
+
+                // Build user-friendly field names
+                const fieldNames = {
+                    'Email_address': 'Email Address',
+                    'Phone_number': 'Phone Number',
+                    'Owner_name': 'Owner Name',
+                    'Business_Name': 'Business Name',
+                    'Business_address': 'Business Address',
+                    'Password': 'Password',
+                    'Category': 'Category'
+                };
+                missingFields.push(fieldNames[field] || field);
+            }
+
+            return res.status(400).json({
+                success: false,
+                code: 'VALIDATION_ERROR',
+                message: `Please provide: ${missingFields.join(', ')}`,
+                details: validationErrors
+            });
+        }
+
+        // Handle duplicate key error
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0];
+            const fieldNames = {
+                'Email_address': 'Email',
+                'Phone_number': 'Phone number',
+                'Business_Name': 'Business name'
+            };
+            return res.status(409).json({
+                success: false,
+                code: 'DUPLICATE_ENTRY',
+                message: `${fieldNames[field] || field} is already registered`,
+                details: { field }
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            code: 'SERVER_ERROR',
+            message: 'Registration failed. Please try again later.',
+            details: {}
+        });
     }
 };
 
