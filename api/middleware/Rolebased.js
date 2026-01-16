@@ -67,10 +67,17 @@ exports.requireProductVendor = () => {
       req.user.category === 'Non-Technical';    // Fallback: lowercase variant
 
     if (!hasProductAccess) {
+      // Return detailed debug info to help diagnose the issue
       return res.status(403).json({
         message: "Access denied. Product role required.",
         requiredRoles: ['product', 'Non-Technical', 'admin'],
-        yourRole: req.user.role || req.user.Category || 'none'
+        debug: {
+          role: req.user.role,
+          Category: req.user.Category,
+          category: req.user.category,
+          email: req.user.email,
+          id: req.user.id
+        }
       });
     }
 
