@@ -341,9 +341,22 @@ exports.registerVendor = async (req, res) => {
 
         // SERVER-SIDE ROLE ASSIGNMENT (cannot be manipulated by frontend)
         // Determine vendor role based on Category/selectedTab
+        // DEBUG: Log what we're receiving
+        console.log('Registration - selectedTab:', req.body.selectedTab);
+        console.log('Registration - Category:', Category);
+        console.log('Registration - Full body keys:', Object.keys(req.body));
+
         let vendorRole = 'Technical'; // Default
-        if (req.body.selectedTab === 'product' || Category === 'Non-Technical' || Category === 'Product') {
+
+        // Check multiple ways the tab could be sent
+        const selectedTab = req.body.selectedTab || req.body.tab || req.body.registrationType;
+
+        if (selectedTab === 'product' || selectedTab === 'Product' ||
+            Category === 'Non-Technical' || Category === 'Product' || Category === 'product') {
             vendorRole = 'product'; // Product vendor role
+            console.log('Registration - Assigned PRODUCT role');
+        } else {
+            console.log('Registration - Assigned TECHNICAL role (default)');
         }
 
         const vendor = new TempVendor({
