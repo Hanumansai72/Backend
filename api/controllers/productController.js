@@ -2,6 +2,8 @@ const productdata = require('../models/vendorproudctdetails');
 const Vendor = require('../models/admin');
 const revieworder = require('../models/reviewvendor');
 const mongoose = require('mongoose');
+const ErrorResponse = require('../utils/errorResponse');
+const { ERROR_CODES } = require('../utils/errorCodes');
 
 /**
  * Get all products with optional category filter
@@ -19,7 +21,12 @@ exports.getAllProducts = async (req, res) => {
         const products = await productdata.find(query).lean();
 
         if (!products.length) {
-            return res.status(404).json({ message: 'No products found' });
+            throw new ErrorResponse(
+                ERROR_CODES.RESOURCE_NOT_FOUND,
+                'No products found',
+                {},
+                404
+            );
         }
 
         const productsWithReviewCount = await Promise.all(
@@ -39,7 +46,17 @@ exports.getAllProducts = async (req, res) => {
         res.status(200).json(productsWithReviewCount);
     } catch (err) {
         console.error('Error fetching products:', err);
-        res.status(500).json({ error: 'Server error' });
+        if (err instanceof ErrorResponse) {
+            return res.status(err.statusCode).json(err.toJSON());
+        }
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch products',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -51,7 +68,12 @@ exports.getProductById = async (req, res) => {
         const product = await productdata.findById(req.params.id);
 
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            throw new ErrorResponse(
+                ERROR_CODES.RESOURCE_NOT_FOUND,
+                'Product not found',
+                {},
+                404
+            );
         }
 
         const vendor = await Vendor.findById(product.Vendor);
@@ -61,8 +83,18 @@ exports.getProductById = async (req, res) => {
             Vendor: vendor
         });
     } catch (err) {
-        console.error('Error fetching product or vendor:', err);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error fetching product:', err);
+        if (err instanceof ErrorResponse) {
+            return res.status(err.statusCode).json(err.toJSON());
+        }
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to fetch product details',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -93,7 +125,12 @@ exports.getProductsByVendor = async (req, res) => {
     const vendorId = req.params.vendorId;
 
     if (!vendorId || vendorId === 'null') {
-        return res.status(400).json({ error: 'Invalid vendor ID' });
+        throw new ErrorResponse(
+            ERROR_CODES.VALIDATION_ERROR,
+            'Invalid vendor ID',
+            {},
+            400
+        );
     }
 
     try {
@@ -170,7 +207,15 @@ exports.addProduct = async (req, res) => {
             !ProductSubCategory ||
             !ProductLocation
         ) {
-            return res.status(400).json({ message: 'Missing required fields' });
+            throw new ErrorResponse(
+                ERROR_CODES.VALIDATION_ERROR,
+                'Missing required fields',
+                {
+                    required: ['Vendor', 'ProductName', 'ProductPrice', 'ProductStock',
+                        'ProductDescription', 'ProductCategory', 'ProductSubCategory', 'ProductLocation']
+                },
+                400
+            );
         }
 
         const ProductUrls = Array.isArray(ProductUrl)
@@ -206,11 +251,17 @@ exports.addProduct = async (req, res) => {
         });
     } catch (err) {
         console.error('Product upload error:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while adding product',
-            error: err.message,
-        });
+        if (err instanceof ErrorResponse) {
+            return res.status(err.statusCode).json(err.toJSON());
+        }
+        res.status(500).json(
+            new ErrorResponse(
+                ERROR_CODES.SERVER_ERROR,
+                'Failed to add product',
+                { error: err.message },
+                500
+            ).toJSON()
+        );
     }
 };
 
@@ -301,11 +352,21 @@ exports.updateProduct = async (req, res) => {
         // Verify ownership - vendor can only update their own products
         const product = await productdata.findById(productId);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            throw new ErrorResponse(
+                ERROR_CODES.RESOURCE_NOT_FOUND,
+                'Product not found',
+                {},
+                404
+            );
         }
 
         if (req.user.role !== 'admin' && product.Vendor.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Access denied. You can only update your own products.' });
+            throw new ErrorResponse(
+                ERROR_CODES.FORBIDDEN,
+                'Access denied. You can only update your own products',
+                {},
+                403
+            );
         }
 
         const updatedProduct = await productdata.findByIdAndUpdate(
@@ -340,11 +401,21 @@ exports.deleteProduct = async (req, res) => {
         // Verify ownership - vendor can only delete their own products
         const product = await productdata.findById(productId);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            throw new ErrorResponse(
+                ERROR_CODES.RESOURCE_NOT_FOUND,
+                'Product not found',
+                {},
+                404
+            );
         }
 
         if (req.user.role !== 'admin' && product.Vendor.toString() !== req.user.id) {
-            return res.status(403).json({ message: 'Access denied. You can only delete your own products.' });
+            throw new ErrorResponse(
+                ERROR_CODES.FORBIDDEN,
+                'Access denied. You can only delete your own products',
+                {},
+                403
+            );
         }
 
         await productdata.findByIdAndDelete(productId);
